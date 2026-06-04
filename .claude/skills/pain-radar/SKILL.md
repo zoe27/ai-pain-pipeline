@@ -1,13 +1,13 @@
 ---
 name: pain-radar
-description: 抓取 Hacker News / Reddit 上 SaaS / 开发者工具相关痛点候选，输出符合 contracts/pain_point.schema.json 的 PainPointBatch JSON 到 runs/{pipeline_id}/1_pain_points.json。当用户要跑 pipeline 阶段 1、做痛点雷达扫描、或者运行 /pain-radar 时使用。
+description: 抓取 HN / GitHub Issues / Product Hunt / Reddit 上 SaaS / 开发者工具相关痛点候选，输出符合 contracts/pain_point.schema.json 的 PainPointBatch JSON 到 runs/{pipeline_id}/1_pain_points.json。当用户要跑 pipeline 阶段 1、做痛点雷达扫描、或者运行 /pain-radar 时使用。
 ---
 
 # Pain Radar — 阶段 1 痛点雷达
 
 ## 用途
 
-扫描配置里指定的数据源（默认 **Hacker News**，可选 Reddit），抽取符合条件的痛点候选，落地为结构化 JSON。
+扫描配置里启用的数据源（默认 **HN + GitHub Issues**；可选 Product Hunt、Reddit），抽取符合条件的痛点候选，落地为结构化 JSON。
 
 ## 输入
 
@@ -32,42 +32,30 @@ description: 抓取 Hacker News / Reddit 上 SaaS / 开发者工具相关痛点�
 
 ### 2–3. 抓取 + 过滤 + 合并
 
-根据 config 里 `sources[].type` 选择 helper：
-
-#### Hacker News（默认，推荐）
-
-**无需 API key**，使用 [HN Algolia API](https://hn.algolia.com/api)：
+**推荐**：一次跑齐所有 `enabled: true` 的源：
 
 ```bash
-python3 helpers/fetch_hn.py {pipeline_id} --config {config_path}
+python3 helpers/fetch_radar.py {pipeline_id} --config {config_path}
 ```
 
-Helper 会：
-- 对每个 `tags`（如 `ask_hn`, `story`, `show_hn`）调用 Algolia `search_by_date`（按时间排序，适合抓近期内容）
-- 有 `keywords` 时先服务端 query；若 0 条则拉近期帖子再本地关键词过滤；仍 0 则 WARN 并保留近期 top 帖（避免空跑）
-- `date_range` 映射为 `created_at_i` 下限
-- 每 tag 抓 `limit_per_source` 条，过滤后保留 `top_per_source`（默认 10）→ `runs/{pid}/_raw/{tag}_top.json`
-- 按 config 里 tag **顺序** 去重合并 → `runs/{pid}/_raw/top50.json`
-- 单 tag 失败 → 警告 + 继续；**全部失败 → 退出非零**
-- **禁止**在抓取失败时复制其他 pipeline 的旧 `_raw` 冒充新数据
+合并顺序：hackernews → github_issues → producthunt → reddit。单源失败 WARN 并继续；**全部源无数据 → 退出非零**。**禁止**复用其他 pipeline 的旧 `_raw`。
 
-**过滤标准**（helper 内建）：
-- `points < min_points` 跳过
-- 无 title 跳过
-- 跨 tag 按 `object_id` 去重
+| 源 | `enabled` 默认 | 凭证 | 单源调试 |
+|----|----------------|------|----------|
+| `hackernews` | true | 无 | `fetch_hn.py` |
+| `github_issues` | true | `GITHUB_TOKEN` 可选 | `fetch_github_issues.py` |
+| `producthunt` | false | `PRODUCTHUNT_TOKEN` 必填 | `fetch_producthunt.py` |
+| `reddit` | false | OAuth + Data API 批准 | `fetch_reddit.py` |
 
-#### Reddit（可选，需 OAuth）
+**HN**（[Algolia API](https://hn.algolia.com/api)）：每 `tags` 抓 `limit_per_source`，过滤后 `top_per_source` → `{tag}_top.json`；关键词 0 命中时 WARN 并保留近期 top 帖。
 
-公开 `www.reddit.com/...json` 在云环境/Cursor 会 **403**。必须用 OAuth helper：
+**GitHub Issues**：按 `repos` 拉 open issues（跳过 PR）；可选 `labels`；`min_comments` 过滤。
 
-**一次性配置**（用户本机）：
-1. [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) 创建 **script** 应用（需 Reddit 批准 Data API 访问）
-2. 复制 `.env.example` → `.env`，填写 `REDDIT_CLIENT_ID`、`REDDIT_CLIENT_SECRET`、`REDDIT_USER_AGENT`
-3. `pip install -r requirements.txt`
+**Product Hunt**：GraphQL 热门帖；可选 `topics` 过滤。
 
-```bash
-python3 helpers/fetch_reddit.py {pipeline_id} --config configs/radar.reddit.example.yaml
-```
+**Reddit**：公开 JSON 会 403，必须 OAuth。配置见 `configs/radar.reddit.example.yaml` 与 `.env.example`。
+
+**暂缓（#4）**：HN 按用户自定义 idea/关键词定向搜索（独立 CLI），不在本 skill 默认流程。
 
 ### 4. 抽取判断 → 写 `_judgments/stage1.json`（Agent）
 
@@ -122,16 +110,15 @@ python3 helpers/digest.py runs/{pipeline_id}/1_pain_points.json
 |------|------|
 | 单 tag/subreddit HTTP 错 / 解析失败 / 超时 | 警告 + 继续 |
 | 收到 429 | helper 等 5s 重试一次，再失败则跳过 |
-| Reddit 未配置 `.env` / OAuth 失败 | 退出非零，提示创建 script app |
-| 所有 tag/subreddit 都失败 | 退出非零，报告原因 |
+| Reddit/PH 已启用但缺 token | WARN，跳过该源 |
+| 所有启用源都无数据 | `fetch_radar` 退出非零 |
 | 抓取失败 | **禁止**复用其他日期的 `_raw` 数据 |
 | `_judgments/stage1.json` 数量与 `top50.json` 不符 | helper 报错 → 检查判断有没有漏 |
 | schema 校验失败 | helper 报错指出字段 → 修 stage1.json |
 
 ## 当前限制
 
-- 已实现：**Hacker News**、Reddit
-- 待实现：GitHub Issues、Product Hunt
-- 默认每 tag 取 top 10（3 tags ≈ 30 条）
+- 已实现：**HN、GitHub Issues、Product Hunt、Reddit**（后两者默认 `enabled: false`）
+- 暂缓：**HN 定向关键词/idea 搜索**（#4）
+- 默认每源 `top_per_source: 10`；多源合并后条数 = 各源之和（跨源按 `source:object_id` 去重）
 - 不并发抓取
-- 跨 tag 去重（按 object_id）

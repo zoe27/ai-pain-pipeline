@@ -73,11 +73,13 @@ def created_after_ts(date_range: str) -> int | None:
     return int(now.timestamp()) - seconds
 
 
-def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, int]:
+def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, int] | None:
+    from radar_common import source_enabled
+
     sources = config.get("sources") or []
     hn = next((s for s in sources if s.get("type") == "hackernews"), None)
-    if not hn:
-        raise SystemExit("config has no sources[].type: hackernews")
+    if not hn or not source_enabled(hn):
+        return None
     tags = hn.get("tags") or ["ask_hn"]
     keywords = hn.get("keywords") or []
     min_points = int(hn.get("min_points", hn.get("min_upvotes", 10)))
@@ -190,15 +192,12 @@ def fetch_tag(
     return payload, posts
 
 
-def run(pipeline_id: str, config_path: pathlib.Path) -> None:
-    config = load_yaml(config_path)
-    tags, keywords, min_points, date_range, fetch_limit, top_n = parse_hn_source(
-        config
-    )
+def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
+    parsed = parse_hn_source(config)
+    if not parsed:
+        return []
+    tags, keywords, min_points, date_range, fetch_limit, top_n = parsed
     created_after = created_after_ts(date_range)
-
-    run_dir = ROOT / "runs" / pipeline_id
-    raw_dir = run_dir / "_raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     kw_display = " ".join(keywords) if keywords else "(recent, no keyword filter)"
@@ -249,18 +248,27 @@ def run(pipeline_id: str, config_path: pathlib.Path) -> None:
         time.sleep(1)
 
     if ok == 0:
-        raise SystemExit(
-            "All HN tags failed. Check network and config.\n"
-            + "\n".join(f"  - {tag}: {err}" for tag, err in failed)
+        print(
+            "warning: all HN tags failed — "
+            + "; ".join(f"{tag}: {err}" for tag, err in failed),
+            file=sys.stderr,
         )
+    elif failed:
+        print(f"warning: {len(failed)} HN tag(s) skipped", file=sys.stderr)
+    return merged
 
+
+def run(pipeline_id: str, config_path: pathlib.Path) -> None:
+    config = load_yaml(config_path)
+    if not parse_hn_source(config):
+        raise SystemExit("config has no enabled sources[].type: hackernews")
+    raw_dir = ROOT / "runs" / pipeline_id / "_raw"
+    merged = collect(config, raw_dir)
+    if not merged:
+        raise SystemExit("Hacker News fetch produced no posts")
     top50_path = raw_dir / "top50.json"
     top50_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
-    print(
-        f"✓ wrote {top50_path.relative_to(ROOT)} ({len(merged)} posts from {ok} tags)"
-    )
-    if failed:
-        print(f"warning: {len(failed)} tag(s) skipped", file=sys.stderr)
+    print(f"✓ wrote {top50_path.relative_to(ROOT)} ({len(merged)} posts)")
 
 
 def main() -> None:

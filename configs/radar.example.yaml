@@ -1,11 +1,11 @@
-# Pain Radar 配置示例
-# v0.2: 默认 Hacker News（无需 API key）
-# 抓取: python3 helpers/fetch_hn.py <pipeline_id> --config configs/radar.example.yaml
-# Reddit（需 OAuth）: python3 helpers/fetch_reddit.py <pipeline_id> --config configs/radar.reddit.example.yaml
-# 详见 contracts/pain_point.schema.json + .claude/skills/pain-radar/SKILL.md
+# Pain Radar — multi-source example (v0.3)
+# 统一抓取: python3 helpers/fetch_radar.py <pipeline_id> --config configs/radar.example.yaml
+# 单源: fetch_hn.py | fetch_github_issues.py | fetch_producthunt.py | fetch_reddit.py
+# HN 定向关键词搜索（#4）暂缓，见 docs/execution-modes.md
 
 sources:
   - type: hackernews
+    enabled: true
     tags:
       - ask_hn
       - story
@@ -18,9 +18,33 @@ sources:
       - struggle
     min_points: 10
 
+  - type: github_issues
+    enabled: true
+    repos:
+      - vercel/next.js
+      - supabase/supabase
+      - langchain-ai/langchain
+    labels: []              # 空 = 不按 label 过滤
+    min_comments: 5
+    keywords: []            # 空 = 仅按互动排序
+
+  - type: producthunt
+    enabled: false            # 需 PRODUCTHUNT_TOKEN，见 .env.example
+    topics: []                # 空 = 全站热门
+    min_votes: 10
+    keywords: []
+
+  - type: reddit
+    enabled: false            # 需 Reddit Data API 批准 + OAuth，见 configs/radar.reddit.example.yaml
+    subreddits:
+      - SaaS
+      - startups
+      - devtools
+    min_upvotes: 10
+
 filters:
   language: en
   date_range: last_7_days   # last_24_hours | last_7_days | last_month
 
-limit_per_source: 50         # 每个 tag 最多抓 50 条（Algolia API）
-top_per_source: 10           # 过滤后每 tag 保留条数 → 合并为 top50.json
+limit_per_source: 50
+top_per_source: 10
