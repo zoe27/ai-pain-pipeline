@@ -1,0 +1,30 @@
+# Helpers
+
+通用脚本，被 skill 调用。原则：能用 skill 做的就别写代码，这里只放 skill 真的搞不定的事。
+
+## 当前内容
+
+| 脚本 | 用途 | 被谁调 |
+|------|------|--------|
+| `digest.py` | 任意 stage 输出 → 人类可读 markdown digest | 跑完 stage 之后人手 / skill 末步 |
+| `fetch_hn.py <pid>` | Algolia 抓取 HN + 过滤 + 写 `_raw/top50.json`（**无需 API key**） | `pain-radar` skill 步骤 2–3（默认） |
+| `fetch_reddit.py <pid>` | OAuth 抓取 Reddit + 过滤 + 写 `_raw/top50.json` | `pain-radar` skill 步骤 2–3（可选） |
+| `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
+| `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
+| `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |
+
+## 设计约定
+
+- **判断（Claude 的 LLM 产出）和拼装（确定性代码）分开**
+  - 判断 → `runs/{pid}/_judgments/stageN.json`（纯数据）
+  - 拼装 → `helpers/build_*.py`（无 hardcode 数据）
+- **每个 helper 单参数 `pipeline_id`**，路径都从 pid 推导
+- **严格校验**：每个 helper 跑完都用对应的 jsonschema 验一遍，挂了立刻报错
+- **幂等**：可以重复跑，不会损坏前一阶段输出（但当前会覆盖自己的输出）
+
+## 预期未来加的
+
+| 文件 | 用途 | 何时加 |
+|------|------|--------|
+| `headless.sh` | cron / GitHub Actions 触发 `claude -p` | 需要定时跑时 |
+| `build_*_batch.py`（更多 stage） | stage 3+ 落地工具 | 写 stage 3 skill 时 |

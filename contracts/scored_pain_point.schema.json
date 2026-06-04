@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scored_pain_point.schema.json",
+  "title": "ScoredPainPointBatch",
+  "description": "Stage 2 (Opportunity Evaluation) output: ICE scoring + red flags for pain points from stage 1.",
+  "type": "object",
+  "required": ["pipeline_id", "scored_at", "input_file", "count", "scored"],
+  "additionalProperties": false,
+  "properties": {
+    "pipeline_id": {
+      "type": "string",
+      "pattern": "^pipe_\\d{4}-\\d{2}-\\d{2}_\\d{3}$"
+    },
+    "scored_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "input_file": {
+      "type": "string",
+      "description": "Relative path to the stage-1 output that was scored, e.g. runs/pipe_.../1_pain_points.json"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must equal scored.length"
+    },
+    "scored": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/ScoredPainPoint" }
+    }
+  },
+  "definitions": {
+    "ScoredPainPoint": {
+      "type": "object",
+      "required": ["pain_point_id", "title", "ice_score", "market_signals", "ai_reasoning", "red_flags"],
+      "additionalProperties": false,
+      "properties": {
+        "pain_point_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Links back to PainPoint.id from stage 1"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Denormalized from stage 1 for human readability"
+        },
+        "ice_score": {
+          "type": "object",
+          "required": ["impact", "confidence", "ease", "total"],
+          "additionalProperties": false,
+          "properties": {
+            "impact": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Value of solving this pain. 10 = deep need, paying willingness high. 1 = nice-to-have."
+            },
+            "confidence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "How sure this is real recurring pain. 10 = many concrete repeated complaints, no existing solution."
+            },
+            "ease": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "How easy to ship a product. 10 = solo-builder MVP in 1 month. 1 = needs license/big team/massive data."
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "description": "Auto-computed: impact × confidence × ease"
+            }
+          }
+        },
+        "market_signals": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "google_trends_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "competitor_count": { "type": "integer", "minimum": 0 },
+                "estimated_market_size_usd": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ],
+          "description": "v0.1 always null. Stage 3 (user research) fills with real data."
+        },
+        "ai_reasoning": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 500,
+          "description": "Why these I/C/E values. Reference the post content. ≤ 200 字 / ~400 chars."
+        },
+        "red_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 80
+          },
+          "maxItems": 10,
+          "description": "Reasons NOT to build this. Examples: '需要监管牌照', '已有 Stripe 这种大玩家', '受众没付费意愿', '产品做不了纯精神问题'"
+        }
+      }
+    }
+  }
+}
