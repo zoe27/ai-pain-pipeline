@@ -178,25 +178,34 @@ def filter_posts(posts: list[dict], min_upvotes: int) -> list[dict]:
         text = d.get("selftext") or ""
         if text in ("[deleted]", "[removed]"):
             continue
+        permalink = d.get("permalink", "")
+        oid = str(d.get("id", "")) or permalink
+        subreddit = d.get("subreddit", "")
         out.append(
             {
-                "subreddit": d.get("subreddit", ""),
+                "source": "reddit",
+                "source_label": subreddit,
+                "object_id": oid,
+                "subreddit": subreddit,
                 "title": d.get("title", ""),
                 "selftext": text,
                 "ups": int(d.get("ups", 0)),
                 "num_comments": int(d.get("num_comments", 0)),
-                "permalink": d.get("permalink", ""),
+                "permalink": permalink,
+                "source_url": f"https://reddit.com{permalink}",
             }
         )
     out.sort(key=lambda p: p["ups"], reverse=True)
     return out
 
 
-def parse_reddit_source(config: dict) -> tuple[list[str], int, str, int, int]:
+def parse_reddit_source(config: dict) -> tuple[list[str], int, str, int, int] | None:
+    from radar_common import source_enabled
+
     sources = config.get("sources") or []
     reddit = next((s for s in sources if s.get("type") == "reddit"), None)
-    if not reddit:
-        raise SystemExit("config has no sources[].type: reddit")
+    if not reddit or not source_enabled(reddit):
+        return None
     subreddits = reddit.get("subreddits") or []
     if not subreddits:
         raise SystemExit("reddit subreddits list is empty")
@@ -208,17 +217,22 @@ def parse_reddit_source(config: dict) -> tuple[list[str], int, str, int, int]:
     return subreddits, min_upvotes, t, fetch_limit, top_n
 
 
-def run(pipeline_id: str, config_path: pathlib.Path) -> None:
-    client_id, client_secret, user_agent = reddit_credentials()
-    config = load_yaml(config_path)
-    subreddits, min_upvotes, t, fetch_limit, top_n = parse_reddit_source(config)
+def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
+    parsed = parse_reddit_source(config)
+    if not parsed:
+        return []
 
-    run_dir = ROOT / "runs" / pipeline_id
-    raw_dir = run_dir / "_raw"
+    try:
+        client_id, client_secret, user_agent = reddit_credentials()
+    except SystemExit as e:
+        print(f"WARN reddit: skipped — {e}", file=sys.stderr)
+        return []
+
+    subreddits, min_upvotes, t, fetch_limit, top_n = parsed
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     token = fetch_access_token(client_id, client_secret, user_agent)
-    print(f"✓ OAuth token obtained (user-agent: {user_agent[:60]}...)")
+    print(f"✓ Reddit OAuth (user-agent: {user_agent[:60]}...)")
 
     ok, failed = 0, []
     merged: list[dict] = []
@@ -242,17 +256,28 @@ def run(pipeline_id: str, config_path: pathlib.Path) -> None:
             print(f"WARN r/{sr}: {e}", file=sys.stderr)
         time.sleep(2)
 
-    if ok == 0:
-        raise SystemExit(
-            "All subreddits failed. Check credentials, User-Agent, and network.\n"
-            + "\n".join(f"  - r/{sr}: {err}" for sr, err in failed)
+    if ok == 0 and subreddits:
+        print(
+            "warning: all Reddit subreddits failed — "
+            + "; ".join(f"r/{sr}: {err}" for sr, err in failed),
+            file=sys.stderr,
         )
+    elif failed:
+        print(f"warning: {len(failed)} subreddit(s) skipped", file=sys.stderr)
+    return merged
 
+
+def run(pipeline_id: str, config_path: pathlib.Path) -> None:
+    config = load_yaml(config_path)
+    if not parse_reddit_source(config):
+        raise SystemExit("config has no enabled sources[].type: reddit")
+    raw_dir = ROOT / "runs" / pipeline_id / "_raw"
+    merged = collect(config, raw_dir)
+    if not merged:
+        raise SystemExit("Reddit fetch produced no posts")
     top50_path = raw_dir / "top50.json"
     top50_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
-    print(f"✓ wrote {top50_path.relative_to(ROOT)} ({len(merged)} posts from {ok} subreddits)")
-    if failed:
-        print(f"warning: {len(failed)} subreddit(s) skipped", file=sys.stderr)
+    print(f"✓ wrote {top50_path.relative_to(ROOT)} ({len(merged)} posts)")
 
 
 def main() -> None:

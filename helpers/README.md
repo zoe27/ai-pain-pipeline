@@ -7,8 +7,12 @@
 | 脚本 | 用途 | 被谁调 |
 |------|------|--------|
 | `digest.py` | 任意 stage 输出 → 人类可读 markdown digest | 跑完 stage 之后人手 / skill 末步 |
-| `fetch_hn.py <pid>` | Algolia 抓取 HN + 过滤 + 写 `_raw/top50.json`（**无需 API key**） | `pain-radar` skill 步骤 2–3（默认） |
-| `fetch_reddit.py <pid>` | OAuth 抓取 Reddit + 过滤 + 写 `_raw/top50.json` | `pain-radar` skill 步骤 2–3（可选） |
+| `fetch_radar.py <pid>` | **多源合并**：HN + GitHub + PH + Reddit（按 config `enabled`） | `pain-radar` skill 步骤 2–3（推荐） |
+| `fetch_hn.py <pid>` | Algolia 抓取 HN（无需 API key） | 单源调试 |
+| `fetch_github_issues.py <pid>` | GitHub REST Issues（`GITHUB_TOKEN` 可选） | 单源调试 |
+| `fetch_producthunt.py <pid>` | Product Hunt GraphQL（需 `PRODUCTHUNT_TOKEN`） | 单源调试 |
+| `fetch_reddit.py <pid>` | OAuth 抓取 Reddit | 单源调试（需 API 批准） |
+| `radar_common.py` | 多源 fetch 共享：YAML、HTTP、过滤、合并 | 被上述 fetch 脚本 import |
 | `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
 | `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
 | `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |

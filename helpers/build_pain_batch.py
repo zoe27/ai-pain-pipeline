@@ -45,7 +45,15 @@ def post_stable_id(post: dict) -> str:
     source = post.get("source", "reddit")
     if source == "hackernews":
         return f"hackernews:{post.get('object_id') or post['permalink']}"
-    return post["permalink"]
+    if source == "github_issues":
+        repo = post.get("repo") or post.get("source_label", "")
+        oid = post.get("object_id") or ""
+        return f"github_issues:{repo}#{oid}"
+    if source == "producthunt":
+        return f"producthunt:{post.get('object_id', '')}"
+    if source == "reddit":
+        return f"reddit:{post.get('object_id') or post['permalink']}"
+    return f"{source}:{post.get('permalink', post.get('object_id', ''))}"
 
 
 def build(pipeline_id: str, source_file: str = "_raw/top50.json") -> dict:
