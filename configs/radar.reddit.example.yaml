@@ -1,0 +1,19 @@
+# Pain Radar — Reddit 数据源（需 OAuth，见项目根 .env.example）
+# 抓取: python3 helpers/fetch_reddit.py <pipeline_id> --config configs/radar.reddit.example.yaml
+
+sources:
+  - type: reddit
+    subreddits:
+      - SaaS
+      - Entrepreneur
+      - indiehackers
+      - SideProject
+      - webdev
+    min_upvotes: 10
+
+filters:
+  language: en
+  date_range: last_7_days
+
+limit_per_source: 50
+top_per_source: 10

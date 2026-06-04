@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pain_point.schema.json",
+  "title": "PainPointBatch",
+  "description": "Stage 1 (Pain Radar) output: a batch of pain point candidates produced by one pipeline run.",
+  "type": "object",
+  "required": ["pipeline_id", "generated_at", "count", "pain_points"],
+  "additionalProperties": false,
+  "properties": {
+    "pipeline_id": {
+      "type": "string",
+      "pattern": "^pipe_\\d{4}-\\d{2}-\\d{2}_\\d{3}$",
+      "description": "Format: pipe_YYYY-MM-DD_NNN, e.g. pipe_2026-05-20_001"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must equal pain_points.length"
+    },
+    "pain_points": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/PainPoint" }
+    }
+  },
+  "definitions": {
+    "PainPoint": {
+      "type": "object",
+      "required": [
+        "id",
+        "source",
+        "source_url",
+        "title",
+        "raw_content",
+        "signals",
+        "extracted_keywords",
+        "extracted_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["reddit", "hackernews", "github_issues", "producthunt"]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "raw_content": {
+          "type": "string",
+          "description": "Original post body. Empty string allowed (e.g. link-only posts)."
+        },
+        "signals": {
+          "type": "object",
+          "required": ["upvotes", "comments_count", "sentiment"],
+          "additionalProperties": false,
+          "properties": {
+            "upvotes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "comments_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sentiment": {
+              "type": "string",
+              "enum": ["negative", "positive", "neutral", "mixed"]
+            }
+          }
+        },
+        "extracted_keywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9 +#.-]*$"
+          },
+          "minItems": 1,
+          "maxItems": 10,
+          "description": "Lowercase, 3-7 keywords typical, no leading/trailing whitespace"
+        },
+        "extracted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}
