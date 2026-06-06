@@ -1,50 +1,93 @@
-# Pain Radar — multi-source example (v0.3)
+# Pain Radar — internet / SaaS product pains (v0.4)
+# 聚焦：线上业务、SaaS、独立开发、获客/留存/变现 —— 非纯技术 bug、非时政/生活杂谈
 # 统一抓取: python3 helpers/fetch_radar.py <pipeline_id> --config configs/radar.example.yaml
-# 单源: fetch_hn.py | fetch_github_issues.py | fetch_producthunt.py | fetch_reddit.py
-# HN 定向关键词搜索（#4）暂缓，见 docs/execution-modes.md
 
 sources:
   - type: hackernews
     enabled: true
     tags:
-      - ask_hn
-      - story
-      - show_hn
+      - ask_hn          # 主战场：创始人/开发者提问
+      - show_hn         # 仅保留匹配 keywords 的产品帖
+      # story 默认关闭 —— 时政/能源/大科技新闻噪音太多
     keywords:
       - saas
       - startup
+      - indie
+      - bootstrap
+      - mrr
+      - customers
+      - churn
+      - billing
+      - pricing
+      - marketing
+      - acquisition
+      - onboarding
+      - subscription
+      - b2b
       - frustrated
       - alternative
-      - struggle
     min_points: 10
 
+  # GitHub Issues 默认关闭：开源框架 issue 多为 bug/DX，不是「用互联网产品解决的商业痛点」
+  # 若开启：必须设 mode: product_pain + pain_keywords，且不会回退到「无匹配也保留 top N」
   - type: github_issues
-    enabled: true
+    enabled: false
+    mode: product_pain
     repos:
-      - vercel/next.js
       - supabase/supabase
-      - langchain-ai/langchain
-    labels: []              # 空 = 不按 label 过滤
-    min_comments: 5
-    keywords: []            # 空 = 仅按互动排序
+    labels: []
+    min_comments: 10
+    pain_keywords:
+      - onboarding
+      - billing
+      - pricing
+      - customer
+      - workflow
+      - ux
+      - churn
+      - support
 
   - type: producthunt
-    enabled: false            # 需 PRODUCTHUNT_TOKEN，见 .env.example
-    topics: []                # 空 = 全站热门
+    enabled: true
+    topics: []                # 空 = 全站热门，可按 saas/dev-tools 等收窄
     min_votes: 10
-    keywords: []
+    keywords:
+      - saas
+      - productivity
+      - marketing
 
+  # Reddit 需 OAuth + Data API 审批，暂不开
   - type: reddit
-    enabled: false            # 需 Reddit Data API 批准 + OAuth，见 configs/radar.reddit.example.yaml
+    enabled: false
     subreddits:
       - SaaS
       - startups
-      - devtools
+      - Entrepreneur
+      - indiehackers
     min_upvotes: 10
+    keywords:
+      - customers
+      - mrr
+      - churn
+      - marketing
 
 filters:
+  focus: internet_saas
   language: en
-  date_range: last_7_days   # last_24_hours | last_7_days | last_month
+  date_range: last_7_days
+  exclude_keywords:
+    - lego
+    - parenting
+    - renewable
+    - solar
+    - wind power
+    - energy transition
+    - geopolitics
+    - nytimes
+    - journalism
+    - climate
+    - vllm
+    - quantization
 
 limit_per_source: 50
 top_per_source: 10

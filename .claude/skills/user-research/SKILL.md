@@ -52,8 +52,39 @@ description: 对 stage 2 高分痛点做用户研究，输出 Opportunity 到 ru
 
 ```bash
 python3 helpers/build_opportunity.py {pipeline_id}
+```
+
+### 4. 中文翻译 → `_judgments/stage3_i18n.json`（Agent）
+
+与 `stage3.json` 同一机会，翻译所有面向读者的文本字段：
+
+```json
+{
+  "title_zh": "科技求职信噪比污染",
+  "one_liner_zh": "帮认真求职的人过滤 LLM 招聘垃圾和假职位，让每封邮件不再是空欢喜。",
+  "target_personas": [
+    {
+      "name_zh": "被裁的软件工程师（3-10 年经验）",
+      "quotes_zh": ["冷投已经没用了，每个职位帖都会被 bot 刷爆", "收件箱里每封邮件都是一丝希望，然后又被碾碎"]
+    }
+  ],
+  "existing_solutions": [
+    {
+      "name_zh": "LinkedIn Premium",
+      "weaknesses_zh": ["收件箱仍被 AI 招聘 spam 淹没", "幽灵职位常见"]
+    }
+  ],
+  "product_hypothesis_zh": "MVP：Gmail 插件识别 LLM 模板推销 + 假职位 URL 检测 + 每周高信号 digest……",
+  "research_notes_zh": "合并 ICE #1 与 #2……护城河弱，但 LLM outreach 检测可作为 1 周 MVP 切入点。"
+}
+```
+
+```bash
+python3 helpers/build_i18n.py {pipeline_id} --stage 3
 python3 helpers/digest.py runs/{pipeline_id}/3_opportunity.json
 ```
+
+生成 `3_opportunity.i18n.json` + **`3_opportunity.digest.zh.md`**。
 
 ## 失败处理
 

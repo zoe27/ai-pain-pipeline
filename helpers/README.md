@@ -6,7 +6,8 @@
 
 | 脚本 | 用途 | 被谁调 |
 |------|------|--------|
-| `digest.py` | 任意 stage 输出 → 人类可读 markdown digest | 跑完 stage 之后人手 / skill 末步 |
+| `digest.py` | stage 输出 → `.digest.md` + `.digest.zh.md`（有 i18n 时） | 各 stage 末步 |
+| `build_i18n.py <pid> --stage N` | `_judgments/stageN_i18n.json` → `N_*.i18n.json` | 各 stage 翻译步骤 |
 | `fetch_radar.py <pid>` | **多源合并**：HN + GitHub + PH + Reddit（按 config `enabled`） | `pain-radar` skill 步骤 2–3（推荐） |
 | `fetch_hn.py <pid>` | Algolia 抓取 HN（无需 API key） | 单源调试 |
 | `fetch_github_issues.py <pid>` | GitHub REST Issues（`GITHUB_TOKEN` 可选） | 单源调试 |
@@ -21,6 +22,7 @@
 
 - **判断（Claude 的 LLM 产出）和拼装（确定性代码）分开**
   - 判断 → `runs/{pid}/_judgments/stageN.json`（纯数据）
+  - 中文 → `runs/{pid}/_judgments/stageN_i18n.json` → `N_*.i18n.json`
   - 拼装 → `helpers/build_*.py`（无 hardcode 数据）
 - **每个 helper 单参数 `pipeline_id`**，路径都从 pid 推导
 - **严格校验**：每个 helper 跑完都用对应的 jsonschema 验一遍，挂了立刻报错
