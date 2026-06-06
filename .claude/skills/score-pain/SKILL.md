@@ -42,8 +42,19 @@ description: 对 stage 1 (pain-radar) 产出的痛点用 ICE 框架评分，识�
 | 已有强大竞品 | "Stripe 收费贵" → Stripe 已经无敌 | Confidence 高，但 Ease 低 |
 | 新闻/段子/吐槽 | "Atlassian 挂了"、"Fraud-as-a-Service 段子" | Impact=2-3，total<30 |
 | 纯产品宣传 | "I built X" 帖（描述自己的产品） | 看 X 解决的问题是不是真痛点；否则 Impact=1-2 |
+| **纯技术 / 框架 bug** | GitHub issue：`fix enum`、`structured output fails`、lint 规则失效 | **Impact≤4, Ease≤4, total<80**；这是维护面不是产品机会 |
+| **开源 DX / 开发者工具细节** | Turbopack 内存、text-splitter PERL enum | 除非能包装成 **面向业务用户的 SaaS**，否则降权 |
+| **大科技/infra 新闻** | 能源转型、模型量化 backend | Impact=1-2，非互联网产品痛点 |
 
-**真痛点的特征**：具体场景 + 反复出现 + 受众有付费意愿 + 单人/小团队 1-3 月可解决。
+**真痛点的特征**：具体 **线上业务场景** + 反复出现 + **非技术人员也会付钱** + 单人/小团队 1-3 月可做出 **互联网产品**（不是给框架提 PR）。
+
+**source 降权指引**（Stage 2 必用）：
+
+| source | 默认处理 |
+|--------|----------|
+| `hackernews` / `reddit` | 正常 ICE；`ask_hn` 商业问题可高分 |
+| `github_issues` | 预设为 **技术维护**；仅当标题/正文明确 **customer/billing/onboarding/pricing/workflow** 且非 bug 模板时才给 Impact≥6 |
+| `producthunt` | 区分「展示自家产品」vs「描述行业痛点」 |
 
 ## 步骤
 
@@ -97,13 +108,32 @@ Helper 自动做：
 - 严格 jsonschema 校验
 - 写 `runs/{pid}/2_scored_pain_points.json`
 
-### 4. 生成可读 digest
+### 4. 中文翻译 → `_judgments/stage2_i18n.json`（Agent）
+
+按 `pain_point_id` 关联，翻译标题、评分理由、风险点（若 `ai_reasoning` 已是中文，`ai_reasoning_zh` 可润色为更通顺的中文）：
+
+```json
+[
+  {
+    "pain_point_id": "uuid-from-stage-1",
+    "title_zh": "请不要向求职者群发推销",
+    "ai_reasoning_zh": "失业求职者在 HN 收到 LLM 群发推销，952 赞说明共鸣极强。可做 outreach 检测，但需邮箱集成。",
+    "red_flags_zh": ["行为问题难产品化", "Gmail 上游可解决", "付费意愿未验证"]
+  }
+]
+```
+
+```bash
+python3 helpers/build_i18n.py {pipeline_id} --stage 2
+```
+
+### 5. 生成可读 digest
 
 ```bash
 python3 helpers/digest.py runs/{pipeline_id}/2_scored_pain_points.json
 ```
 
-会同目录生成 `2_scored_pain_points.digest.md`，分 🟢 值得认真考虑 / 🟡 观察名单 / ⚪ 基本可丢弃 三档。**直接读 digest 就够，JSON 是给下一阶段的。**
+生成 `2_scored_pain_points.digest.md` + **`2_scored_pain_points.digest.zh.md`**。
 
 ## 失败处理
 

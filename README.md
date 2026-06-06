@@ -5,7 +5,7 @@
 一条由 **AI Agent 执行 + 人类在关键节点拍板** 的流水线，把公开社区里的用户抱怨，结构化为可评估、可研究、可进入 PRD 的产品机会。
 
 **当前已实现**：Stage 1–3（痛点雷达 → ICE 评分 → 用户研究）  
-**默认数据源**：Hacker News + GitHub Issues（`fetch_radar.py` 一次合并；PH / Reddit 可选）
+**默认数据源**：Hacker News + Product Hunt + Reddit（`fetch_radar.py`；GitHub 默认关；PH/Reddit 需 `.env` token）
 
 ---
 
@@ -21,20 +21,23 @@ pip install -r requirements.txt
 PIPE=pipe_$(date +%Y-%m-%d)_001
 mkdir -p runs/$PIPE/_raw runs/$PIPE/_judgments
 
-# 3. Stage 1 — 多源抓取（HN + GitHub 默认开启）
+# 3. Stage 1 — 抓取互联网/SaaS 痛点（默认仅 HN ask_hn + show_hn）
 python3 helpers/fetch_radar.py $PIPE --config configs/radar.example.yaml
 # → Agent 写 runs/$PIPE/_judgments/stage1.json（sentiment + keywords）
 python3 helpers/build_pain_batch.py $PIPE
+python3 helpers/build_i18n.py $PIPE --stage 1   # Agent 先写 _judgments/stage1_i18n.json
 python3 helpers/digest.py runs/$PIPE/1_pain_points.json
 
 # 4. Stage 2 — ICE 评分
 # → Agent 写 runs/$PIPE/_judgments/stage2.json
 python3 helpers/build_scored_batch.py $PIPE
+python3 helpers/build_i18n.py $PIPE --stage 2
 python3 helpers/digest.py runs/$PIPE/2_scored_pain_points.json
 
 # 5. Stage 3 — 用户研究
 # → Agent 写 runs/$PIPE/_judgments/stage3.json
 python3 helpers/build_opportunity.py $PIPE
+python3 helpers/build_i18n.py $PIPE --stage 3
 python3 helpers/digest.py runs/$PIPE/3_opportunity.json
 
 # 6. 🚦 决策点 ① — 人读 digest，决定 GO / NO-GO
@@ -115,10 +118,10 @@ PRD → TechSpec → …   （Stage 4–9 待实现）
 
 | 来源 | 抓取 | 配置 | 状态 |
 |------|------|------|------|
-| **Hacker News** | `fetch_hn.py` / `fetch_radar.py` | [`configs/radar.example.yaml`](./configs/radar.example.yaml) | ✅ 默认开启 |
-| **GitHub Issues** | `fetch_github_issues.py` | 同上 | ✅ 默认开启（`GITHUB_TOKEN` 可选） |
-| Product Hunt | `fetch_producthunt.py` | 同上 + `PRODUCTHUNT_TOKEN` | ✅ 默认关闭 |
-| Reddit | `fetch_reddit.py` | [`configs/radar.reddit.example.yaml`](./configs/radar.reddit.example.yaml) | ⚠️ 默认关闭，需 API 审批 |
+| **Hacker News** | `fetch_hn.py` / `fetch_radar.py` | [`configs/radar.example.yaml`](./configs/radar.example.yaml) | ✅ 默认开启（internet_saas 聚焦） |
+| GitHub Issues | `fetch_github_issues.py` | 同上（`mode: product_pain`） | 默认关闭；仅产品/业务向 issue |
+| Product Hunt | `fetch_producthunt.py` | 同上 + `PRODUCTHUNT_TOKEN` | ✅ 默认开启 |
+| Reddit | `fetch_reddit.py` | 同上 + OAuth（见 `.env.example`） | ✅ 默认开启（需 API 审批） |
 | HN 定向 idea 搜索 | — | — | 暂缓（#4） |
 
 HN 配置示例：
@@ -207,7 +210,8 @@ ai-pain-pipeline/
 | `python3 helpers/build_pain_batch.py <pid>` | Stage 1 拼装 + 校验 |
 | `python3 helpers/build_scored_batch.py <pid>` | Stage 2 拼装 + 校验 |
 | `python3 helpers/build_opportunity.py <pid>` | Stage 3 拼装 + 校验 |
-| `python3 helpers/digest.py runs/<pid>/N_*.json` | 生成 `.digest.md` 摘要 |
+| `python3 helpers/digest.py runs/<pid>/N_*.json` | 生成 `.digest.md` + `.digest.zh.md` |
+| `python3 helpers/build_i18n.py <pid> --stage 1\|2\|3` | 生成 `N_*.i18n.json` 中文版 sidecar |
 
 `pipeline_id` 格式：`pipe_YYYY-MM-DD_NNN`（如 `pipe_2026-05-31_001`）。
 

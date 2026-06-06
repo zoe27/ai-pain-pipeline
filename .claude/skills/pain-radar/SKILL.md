@@ -7,7 +7,7 @@ description: 抓取 HN / GitHub Issues / Product Hunt / Reddit 上 SaaS / 开发
 
 ## 用途
 
-扫描配置里启用的数据源（默认 **HN + GitHub Issues**；可选 Product Hunt、Reddit），抽取符合条件的痛点候选，落地为结构化 JSON。
+扫描配置里启用的数据源，聚焦 **互联网 / SaaS / 线上业务痛点**（获客、留存、定价、变现等），排除时政新闻、生活杂谈和纯框架 bug。
 
 ## 输入
 
@@ -43,9 +43,9 @@ python3 helpers/fetch_radar.py {pipeline_id} --config {config_path}
 | 源 | `enabled` 默认 | 凭证 | 单源调试 |
 |----|----------------|------|----------|
 | `hackernews` | true | 无 | `fetch_hn.py` |
-| `github_issues` | true | `GITHUB_TOKEN` 可选 | `fetch_github_issues.py` |
-| `producthunt` | false | `PRODUCTHUNT_TOKEN` 必填 | `fetch_producthunt.py` |
-| `reddit` | false | OAuth + Data API 批准 | `fetch_reddit.py` |
+| `github_issues` | **false** | `GITHUB_TOKEN` 可选 | `fetch_github_issues.py` |
+| `producthunt` | true | `PRODUCTHUNT_TOKEN` 必填 | `fetch_producthunt.py` |
+| `reddit` | true | OAuth + Data API 批准 | `fetch_reddit.py` |
 
 **HN**（[Algolia API](https://hn.algolia.com/api)）：每 `tags` 抓 `limit_per_source`，过滤后 `top_per_source` → `{tag}_top.json`；关键词 0 命中时 WARN 并保留近期 top 帖。
 
@@ -56,6 +56,18 @@ python3 helpers/fetch_radar.py {pipeline_id} --config {config_path}
 **Reddit**：公开 JSON 会 403，必须 OAuth。配置见 `configs/radar.reddit.example.yaml` 与 `.env.example`。
 
 **暂缓（#4）**：HN 按用户自定义 idea/关键词定向搜索（独立 CLI），不在本 skill 默认流程。
+
+### 聚焦范围（v0.4 默认 config）
+
+| 要 | 不要 |
+|----|------|
+| SaaS / 独立开发 / 线上获客·留存·定价·支持 | 能源、时政、育儿、乐高等非互联网话题 |
+| 「用户/客户/创始人」抱怨的业务流程痛点 | GitHub 框架 bug、lint 规则、enum 报错 |
+| Ask HN 里「怎么做增长/怎么找客户」 | 纯 infra 论文/内核/量化优化帖 |
+
+- **HN**：默认仅 `ask_hn` + `show_hn`（去掉 `story` 新闻流）；`filters.exclude_keywords` 过滤噪音
+- **GitHub Issues**：**默认 `enabled: false`**。若开启须 `mode: product_pain` + `pain_keywords`（onboarding/billing/customer…），helper 自动剔除 bug report 模板帖
+- **Reddit**（可选）：sub 选 SaaS/startups/Entrepreneur，不用 devtools
 
 ### 4. 抽取判断 → 写 `_judgments/stage1.json`（Agent）
 
@@ -96,13 +108,41 @@ Helper 自动做：
 
 校验失败 → helper 报错指出哪个字段不符合 schema → 你修 `_judgments/stage1.json` 后重跑。
 
-### 6. 生成可读 digest
+### 6. 中文翻译 → `_judgments/stage1_i18n.json`（Agent）
+
+与 `stage1.json` **同序、同条数**，为每条 post 写中文阅读版（翻译 title + 摘要，关键词可中文化）：
+
+```json
+[
+  {
+    "title_zh": "请不要向求职者群发推销，这很残忍",
+    "summary_zh": "失业六个月的开发者在 HN 求职帖下收到 LLM 群发的推销邮件，引发大量共鸣。",
+    "keywords_zh": ["求职", "招聘", "ai", "spam"]
+  }
+]
+```
+
+- `title_zh`：1–200 字，准确翻译标题
+- `summary_zh`：10–500 字，概括 `title` + `selftext` 核心痛点（不必全文翻译）
+- `keywords_zh`：3–7 个中文关键词
+
+```bash
+python3 helpers/build_i18n.py {pipeline_id} --stage 1
+```
+
+产出 `runs/{pid}/1_pain_points.i18n.json`（不影响英文 schema 输出）。
+
+### 7. 生成可读 digest
 
 ```bash
 python3 helpers/digest.py runs/{pipeline_id}/1_pain_points.json
 ```
 
-会同目录生成 `1_pain_points.digest.md`，人类可读。**JSON 是给下一阶段用的，人不要直接读。**
+会生成：
+- `1_pain_points.digest.md` — 统计 + 英文标题摘要
+- `1_pain_points.digest.zh.md` — **中文版**（需先完成 step 6）
+
+**JSON 是给下一阶段用的；人读 digest，优先读 `.digest.zh.md`。**
 
 ## 失败处理
 
@@ -118,7 +158,8 @@ python3 helpers/digest.py runs/{pipeline_id}/1_pain_points.json
 
 ## 当前限制
 
-- 已实现：**HN、GitHub Issues、Product Hunt、Reddit**（后两者默认 `enabled: false`）
+- 已实现：**HN、GitHub Issues、Product Hunt、Reddit**（HN + PH + Reddit 默认开；GitHub 默认关）
+- 默认聚焦：**internet_saas**（见 `configs/radar.example.yaml` 的 `filters.focus`）
 - 暂缓：**HN 定向关键词/idea 搜索**（#4）
 - 默认每源 `top_per_source: 10`；多源合并后条数 = 各源之和（跨源按 `source:object_id` 去重）
 - 不并发抓取

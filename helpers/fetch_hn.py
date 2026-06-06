@@ -73,7 +73,7 @@ def created_after_ts(date_range: str) -> int | None:
     return int(now.timestamp()) - seconds
 
 
-def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, int] | None:
+def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, int, list[str]] | None:
     from radar_common import source_enabled
 
     sources = config.get("sources") or []
@@ -86,7 +86,10 @@ def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, 
     date_range = (config.get("filters") or {}).get("date_range", "last_7_days")
     fetch_limit = int(config.get("limit_per_source", 50))
     top_n = int(config.get("top_per_source", TOP_PER_SOURCE))
-    return tags, keywords, min_points, date_range, fetch_limit, top_n
+    from radar_common import global_filters
+
+    exclude = global_filters(config)["exclude_keywords"]
+    return tags, keywords, min_points, date_range, fetch_limit, top_n, exclude
 
 
 def build_algolia_url(
@@ -113,11 +116,21 @@ def build_algolia_url(
     return f"{ALGOLIA_BASE}/search_by_date?{qs}"
 
 
-def matches_keywords(post: dict, keywords: list[str]) -> bool:
-    if not keywords:
-        return True
-    haystack = f"{post['title']} {post['selftext']}".lower()
-    return any(kw.lower() in haystack for kw in keywords)
+def filter_posts(
+    posts: list[dict],
+    min_points: int,
+    keywords: list[str],
+    *,
+    exclude_keywords: list[str] | None = None,
+) -> list[dict]:
+    from radar_common import filter_posts as common_filter
+
+    return common_filter(
+        posts,
+        min_score=min_points,
+        keywords=keywords,
+        exclude_keywords=exclude_keywords or [],
+    )
 
 
 def extract_hit(hit: dict, tag: str) -> dict:
@@ -134,27 +147,6 @@ def extract_hit(hit: dict, tag: str) -> dict:
         "author": hit.get("author") or "",
         "url": hit.get("url"),
     }
-
-
-def filter_posts(
-    posts: list[dict], min_points: int, keywords: list[str]
-) -> list[dict]:
-    out = []
-    seen: set[str] = set()
-    for post in posts:
-        oid = post.get("object_id", "")
-        if oid in seen:
-            continue
-        seen.add(oid)
-        if post["ups"] < min_points:
-            continue
-        if not post["title"].strip():
-            continue
-        if not matches_keywords(post, keywords):
-            continue
-        out.append(post)
-    out.sort(key=lambda p: p["ups"], reverse=True)
-    return out
 
 
 def fetch_tag(
@@ -196,7 +188,7 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
     parsed = parse_hn_source(config)
     if not parsed:
         return []
-    tags, keywords, min_points, date_range, fetch_limit, top_n = parsed
+    tags, keywords, min_points, date_range, fetch_limit, top_n, exclude = parsed
     created_after = created_after_ts(date_range)
     raw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -221,14 +213,18 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
                 limit=fetch_limit,
             )
             out_path.write_text(json.dumps(payload, ensure_ascii=False) + "\n")
-            filtered = filter_posts(posts, min_points, keywords)[:top_n]
+            filtered = filter_posts(
+                posts, min_points, keywords, exclude_keywords=exclude
+            )[:top_n]
             if keywords and not filtered and posts:
                 print(
-                    f"WARN {tag}: no keyword matches in date window; "
-                    f"keeping top {top_n} recent posts without keyword filter",
+                    f"WARN {tag}: no internet/SaaS keyword matches; "
+                    f"keeping top {top_n} recent (exclude-only filter)",
                     file=sys.stderr,
                 )
-                filtered = filter_posts(posts, min_points, [])[:top_n]
+                filtered = filter_posts(
+                    posts, min_points, [], exclude_keywords=exclude
+                )[:top_n]
             top_path = raw_dir / f"{tag}_top.json"
             top_path.write_text(
                 json.dumps(filtered, indent=2, ensure_ascii=False) + "\n"

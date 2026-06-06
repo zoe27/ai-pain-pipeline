@@ -17,6 +17,7 @@ from radar_common import (
     ROOT,
     created_after_iso,
     filter_posts,
+    global_filters,
     http_get_json,
     limits,
     load_dotenv,
@@ -36,11 +37,20 @@ def parse_github_source(config: dict) -> dict | None:
     repos = gh.get("repos") or []
     if not repos:
         raise ValueError("github_issues repos list is empty")
+    mode = gh.get("mode", "product_pain")
+    pain_keywords = gh.get("pain_keywords") or gh.get("keywords") or []
+    if mode == "product_pain" and not pain_keywords:
+        raise ValueError(
+            "github_issues mode=product_pain requires pain_keywords "
+            "(business/UX pains, not framework bugs)"
+        )
     return {
         "repos": repos,
         "labels": {lb.lower() for lb in (gh.get("labels") or [])},
         "min_comments": int(gh.get("min_comments", gh.get("min_upvotes", 5))),
         "keywords": gh.get("keywords") or [],
+        "mode": mode,
+        "pain_keywords": pain_keywords,
         "date_range": (config.get("filters") or {}).get("date_range", "last_7_days"),
     }
 
@@ -126,11 +136,14 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
 
     fetch_limit, top_n = limits(config)
     created_after = created_after_iso(gh["date_range"])
+    exclude = global_filters(config)["exclude_keywords"]
+    product_pain = gh["mode"] == "product_pain"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
+    mode_label = "product_pain" if product_pain else "all_issues"
     print(
-        f"✓ GitHub Issues (repos={len(gh['repos'])}, min_comments={gh['min_comments']}, "
-        f"date_range={gh['date_range']})"
+        f"✓ GitHub Issues [{mode_label}] (repos={len(gh['repos'])}, "
+        f"min_comments={gh['min_comments']}, date_range={gh['date_range']})"
     )
 
     merged: list[dict] = []
@@ -149,14 +162,29 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
                 json.dumps(raw_issues, ensure_ascii=False) + "\n"
             )
             filtered = filter_posts(
-                posts, min_score=gh["min_comments"], keywords=gh["keywords"]
+                posts,
+                min_score=gh["min_comments"],
+                keywords=gh["keywords"] if not product_pain else [],
+                exclude_keywords=exclude,
+                github_product_pain=product_pain,
+                pain_keywords=gh["pain_keywords"],
             )[:top_n]
-            if gh["keywords"] and not filtered and posts:
+            if product_pain and not filtered:
+                print(
+                    f"WARN github/{repo}: no product-pain issues matched "
+                    f"(framework bugs filtered out)",
+                    file=sys.stderr,
+                )
+            elif gh["keywords"] and not filtered and posts and not product_pain:
                 print(
                     f"WARN github/{repo}: no keyword matches; keeping top {top_n} by engagement",
                     file=sys.stderr,
                 )
-                filtered = filter_posts(posts, min_score=gh["min_comments"])[:top_n]
+                filtered = filter_posts(
+                    posts,
+                    min_score=gh["min_comments"],
+                    exclude_keywords=exclude,
+                )[:top_n]
             top_path = raw_dir / f"github_{safe}_top.json"
             top_path.write_text(json.dumps(filtered, indent=2, ensure_ascii=False) + "\n")
             merge_posts(merged, filtered)

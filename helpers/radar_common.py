@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import urllib.error
 import urllib.request
 
@@ -14,6 +15,119 @@ DATE_RANGE_SECONDS = {
     "last_7_days": 7 * 86400,
     "last_month": 30 * 86400,
 }
+
+# Default noise for internet/SaaS focus (overridable via config filters.exclude_keywords)
+DEFAULT_EXCLUDE_KEYWORDS = [
+    "lego",
+    "parenting",
+    "renewable",
+    "solar power",
+    "wind power",
+    "energy transition",
+    "geopolitics",
+    "nytimes",
+    "journalism",
+    "climate",
+]
+
+# GitHub issue titles that are usually framework bugs, not product pains
+TECH_ISSUE_TITLE_RE = re.compile(
+    r"(^fix[\(:]|^bug[\(:]|regression|typo|valueerror|typeerror|"
+    r"doesn'?t work|fails when|broken test|ci fail|enum|"
+    r"structured.?output|checkpoint|text-splitter|lint rule)",
+    re.I,
+)
+
+BUG_REPORT_BODY_MARKERS = (
+    "bug report",
+    "### checked other resources",
+    "### submission checklist",
+    "### verify canary release",
+    "### link to the code that reproduces",
+)
+
+
+def global_filters(config: dict) -> dict:
+    """Shared filter knobs from config.filters."""
+    flt = config.get("filters") or {}
+    exclude = list(flt.get("exclude_keywords") or DEFAULT_EXCLUDE_KEYWORDS)
+    return {
+        "focus": flt.get("focus", "internet_saas"),
+        "exclude_keywords": [k.lower() for k in exclude],
+    }
+
+
+def haystack(post: dict) -> str:
+    return f"{post.get('title', '')} {post.get('selftext', '')}".lower()
+
+
+def matches_keywords(post: dict, keywords: list[str]) -> bool:
+    if not keywords:
+        return True
+    text = haystack(post)
+    return any(kw.lower() in text for kw in keywords)
+
+
+def matches_exclude(post: dict, exclude_keywords: list[str]) -> bool:
+    if not exclude_keywords:
+        return False
+    text = haystack(post)
+    return any(kw in text for kw in exclude_keywords)
+
+
+def looks_like_framework_bug_issue(post: dict) -> bool:
+    """GitHub issues that read as bug reports / DX fixes, not user/business pains."""
+    if post.get("source") != "github_issues":
+        return False
+    title = post.get("title", "")
+    body = (post.get("selftext") or "")[:800].lower()
+    if TECH_ISSUE_TITLE_RE.search(title):
+        return True
+    if any(m in body for m in BUG_REPORT_BODY_MARKERS):
+        return True
+    return False
+
+
+def filter_posts(
+    posts: list[dict],
+    *,
+    min_score: int,
+    keywords: list[str] | None = None,
+    exclude_keywords: list[str] | None = None,
+    source: str | None = None,
+    github_product_pain: bool = False,
+    pain_keywords: list[str] | None = None,
+) -> list[dict]:
+    keywords = keywords or []
+    exclude_keywords = exclude_keywords or []
+    pain_keywords = pain_keywords or []
+
+    out = []
+    seen: set[str] = set()
+    for post in posts:
+        key = f"{post['source']}:{post.get('object_id', post.get('permalink', ''))}"
+        if key in seen:
+            continue
+        seen.add(key)
+        if post["ups"] < min_score:
+            continue
+        if not post["title"].strip():
+            continue
+        if matches_exclude(post, exclude_keywords):
+            continue
+        if source and post.get("source") != source:
+            continue
+        if github_product_pain and looks_like_framework_bug_issue(post):
+            if not matches_keywords(post, pain_keywords):
+                continue
+        elif github_product_pain and pain_keywords:
+            if not matches_keywords(post, pain_keywords):
+                continue
+        elif keywords and not matches_keywords(post, keywords):
+            continue
+        out.append(post)
+    out.sort(key=lambda p: p["ups"], reverse=True)
+    return out
 
 
 def load_dotenv(path: pathlib.Path) -> None:
@@ -94,38 +208,6 @@ def http_post_json(
         raise RuntimeError(f"HTTP {e.code}: {body}") from e
     except urllib.error.URLError as e:
         raise RuntimeError(f"network error: {e.reason}") from e
-
-
-def matches_keywords(post: dict, keywords: list[str]) -> bool:
-    if not keywords:
-        return True
-    haystack = f"{post['title']} {post['selftext']}".lower()
-    return any(kw.lower() in haystack for kw in keywords)
-
-
-def filter_posts(
-    posts: list[dict],
-    *,
-    min_score: int,
-    keywords: list[str] | None = None,
-) -> list[dict]:
-    keywords = keywords or []
-    out = []
-    seen: set[str] = set()
-    for post in posts:
-        key = f"{post['source']}:{post.get('object_id', post.get('permalink', ''))}"
-        if key in seen:
-            continue
-        seen.add(key)
-        if post["ups"] < min_score:
-            continue
-        if not post["title"].strip():
-            continue
-        if keywords and not matches_keywords(post, keywords):
-            continue
-        out.append(post)
-    out.sort(key=lambda p: p["ups"], reverse=True)
-    return out
 
 
 def merge_posts(merged: list[dict], new_posts: list[dict]) -> None:
