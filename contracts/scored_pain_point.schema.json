@@ -85,7 +85,17 @@
               "properties": {
                 "google_trends_score": { "type": "integer", "minimum": 0, "maximum": 100 },
                 "competitor_count": { "type": "integer", "minimum": 0 },
-                "estimated_market_size_usd": { "type": "integer", "minimum": 0 }
+                "estimated_market_size_usd": { "type": "integer", "minimum": 0 },
+                "comment_resonance": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "HN comments with +1/same issue phrases (from radar fetch)"
+                },
+                "theme_mentions": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Posts in this run sharing the same pain theme cluster"
+                }
               }
             }
           ],

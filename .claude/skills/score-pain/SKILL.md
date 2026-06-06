@@ -15,7 +15,7 @@ description: 对 stage 1 (pain-radar) 产出的痛点用 ICE 框架评分，识�
 |------|------|------|------|
 | `pipeline_id` | 是 | — | 必须指定 stage 1 已跑过的 pipeline |
 
-读 `runs/{pipeline_id}/1_pain_points.json`。
+读 `runs/{pipeline_id}/1_pain_points.json`。可选读 `domain_context.json`（ICE 侧重）与 `_raw/radar_signals.json`（`multi_post_themes` 可支撑 confidence）。
 
 ## 输出
 

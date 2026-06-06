@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "domain_context.schema.json",
+  "title": "DomainContext",
+  "type": "object",
+  "required": ["pipeline_id", "domain", "target_user"],
+  "additionalProperties": false,
+  "properties": {
+    "pipeline_id": {
+      "type": "string",
+      "pattern": "^pipe_\\d{4}-\\d{2}-\\d{2}_\\d{3}$"
+    },
+    "domain": { "type": "string", "minLength": 3, "maxLength": 200 },
+    "target_user": { "type": "string", "minLength": 3, "maxLength": 200 },
+    "hypothesis": { "type": "string", "maxLength": 500 },
+    "known_competitors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "maxItems": 20
+    },
+    "search_keywords": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 2 },
+      "maxItems": 30
+    },
+    "ice_priority": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "impact": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+        "confidence": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+        "ease": { "type": "number", "minimum": 0.5, "maximum": 2.0 }
+      }
+    },
+    "notes": { "type": "string", "maxLength": 1000 }
+  }
+}

@@ -59,6 +59,14 @@ def run(pipeline_id: str, config_path: pathlib.Path) -> None:
     top50_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
     print(f"✓ wrote {top50_path.relative_to(ROOT)} ({len(merged)} posts)")
 
+    from compute_radar_signals import compute
+
+    signals = compute(merged)
+    signals_path = raw_dir / "radar_signals.json"
+    signals_path.write_text(json.dumps(signals, indent=2, ensure_ascii=False) + "\n")
+    if signals.get("multi_post_themes"):
+        print(f"✓ cross-post themes: {signals['multi_post_themes']}")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)

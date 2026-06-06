@@ -49,6 +49,16 @@ def build(pipeline_id: str) -> dict:
 
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    signals_path = run_dir / "_raw" / "radar_signals.json"
+    sig_by_title: dict[str, dict] = {}
+    multi_themes: dict[str, int] = {}
+    if signals_path.exists():
+        sig = json.loads(signals_path.read_text())
+        multi_themes = sig.get("multi_post_themes") or {}
+        for row in sig.get("posts") or []:
+            if row.get("title"):
+                sig_by_title[row["title"]] = row
+
     scored = []
     for pp in inp["pain_points"]:
         j = judg_by_id[pp["id"]]
@@ -63,6 +73,24 @@ def build(pipeline_id: str) -> dict:
             if not (3 <= len(r) <= 80):
                 raise ValueError(f"red_flag length out of [3,80]: {r!r}")
 
+        market_signals = None
+        row = sig_by_title.get(pp["title"])
+        if row:
+            themes = row.get("themes") or []
+            theme_mentions = max(
+                (multi_themes.get(t, 1) for t in themes),
+                default=0,
+            )
+            resonance = int(row.get("comment_resonance") or 0)
+            if theme_mentions >= 2:
+                c = min(10, c + 1)
+            if resonance >= 3:
+                c = min(10, c + 1)
+            market_signals = {
+                "comment_resonance": resonance,
+                "theme_mentions": max(theme_mentions, 1) if themes else 1,
+            }
+
         scored.append({
             "pain_point_id": pp["id"],
             "title": pp["title"],
@@ -72,7 +100,7 @@ def build(pipeline_id: str) -> dict:
                 "ease": e,
                 "total": i * c * e,
             },
-            "market_signals": None,
+            "market_signals": market_signals,
             "ai_reasoning": j["ai_reasoning"],
             "red_flags": j["red_flags"],
         })

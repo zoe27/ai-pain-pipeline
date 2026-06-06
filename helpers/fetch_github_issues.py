@@ -168,6 +168,7 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
                 exclude_keywords=exclude,
                 github_product_pain=product_pain,
                 pain_keywords=gh["pain_keywords"],
+                config=config,
             )[:top_n]
             if product_pain and not filtered:
                 print(
@@ -184,6 +185,7 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
                     posts,
                     min_score=gh["min_comments"],
                     exclude_keywords=exclude,
+                    config=config,
                 )[:top_n]
             top_path = raw_dir / f"github_{safe}_top.json"
             top_path.write_text(json.dumps(filtered, indent=2, ensure_ascii=False) + "\n")

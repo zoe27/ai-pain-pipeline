@@ -1,0 +1,175 @@
+{
+  "id": "radar_quality_pipe_2026-06-06_002",
+  "description": "Frozen snapshot from pipe_2026-06-06_002 _raw/top50.json with human labels for pain-radar quality eval.",
+  "source_pipeline": "pipe_2026-06-06_002",
+  "success_criteria": {
+    "pain_recall_min": 1.0,
+    "pain_precision_min": 1.0,
+    "product_launch_leak_max": 0.0,
+    "min_kept": 3
+  },
+  "labels": {
+    "48396596": "pain_candidate",
+    "48390168": "pain_candidate",
+    "48396218": "pain_candidate",
+    "48410589": "other",
+    "48396004": "product_launch",
+    "48409955": "product_launch",
+    "48399358": "product_launch",
+    "48373482": "product_launch",
+    "48359478": "product_launch",
+    "48361054": "product_launch",
+    "48419614": "product_launch",
+    "48354865": "product_launch",
+    "1157940": "product_launch",
+    "1144083": "product_launch",
+    "1149728": "product_launch",
+    "1159756": "product_launch"
+  },
+  "posts": [
+    {
+      "source": "hackernews",
+      "source_label": "ask_hn",
+      "object_id": "48410589",
+      "title": "Ask HN: Is the web for machines (/llm.txt) the one we wished we had as humans?",
+      "selftext": "I got really tired, as a human, of parsing the standard marketing heavy web we have today.",
+      "ups": 36,
+      "num_comments": 55
+    },
+    {
+      "source": "hackernews",
+      "source_label": "ask_hn",
+      "object_id": "48396596",
+      "title": "Google killed my $1M ARR startup overnight",
+      "selftext": "Two days ago I had a working company. $1M ARR, 100k users. Right now it's dead because Google suspended my entire account. My business bleeds. No real answer. No timeline.",
+      "ups": 15,
+      "num_comments": 9
+    },
+    {
+      "source": "hackernews",
+      "source_label": "ask_hn",
+      "object_id": "48390168",
+      "title": "Laid off. Broke. Depressed. & idk how to market my SaaS",
+      "selftext": "I am really depressed and have done nearly everything I knew to market my SaaS products but nothing's working. Cold outreach (0 response rate). I don't know what else to do. Really losing hope.",
+      "ups": 15,
+      "num_comments": 24
+    },
+    {
+      "source": "hackernews",
+      "source_label": "ask_hn",
+      "object_id": "48396218",
+      "title": "Ask HN: Spent thousands, got no customers. What's wrong with my site?",
+      "selftext": "However, it has been live for almost a month and still hasn't attracted a single user. I'm not sure what I did wrong.",
+      "ups": 14,
+      "num_comments": 23
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48396004",
+      "title": "Show HN: Uruky (EU-based Kagi alternative) now has Image Search and URL Rewrites",
+      "selftext": "Hi HN, we're building Uruky. Would appreciate any feedback on this thread.",
+      "ups": 231,
+      "num_comments": 220
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48409955",
+      "title": "Show HN: Lowfat – pluggable CLI filter that saved 91.8% of my LLM tokens",
+      "selftext": "Hi HN, feedbacks and questions are welcome! GitHub: https://github.com/zdk/lowfat",
+      "ups": 126,
+      "num_comments": 62
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48399358",
+      "title": "Show HN: Boxes.dev: ditch localhost; run Claude Code and Codex in the cloud",
+      "selftext": "Hi HN, we're Nick and Drew, and we're building boxes.dev. We'd love for you to experience it yourselves!",
+      "ups": 100,
+      "num_comments": 74
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48373482",
+      "title": "Show HN: RePlaya – self-hosted browser session replay with live tailing",
+      "selftext": "Hi HN, I'm one of the founders of s2.dev. Curious to hear feedback!",
+      "ups": 50,
+      "num_comments": 8
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48359478",
+      "title": "Show HN: DepsGuard – One command to harden NPM/pnpm/yarn/bun/uv configs",
+      "selftext": "Hi HN, depsguard scan is read-only. https://github.com/arnica/depsguard",
+      "ups": 40,
+      "num_comments": 6
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48361054",
+      "title": "Show HN: Textile – A desktop app for weaving together bits of text",
+      "selftext": "I'm excited to show off Textile. Try it and let me know what you think!",
+      "ups": 36,
+      "num_comments": 21
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48419614",
+      "title": "Show HN: I nerfed our coding agents on purpose",
+      "selftext": "For anyone interested in trying it themselves: https://nerfguard.com",
+      "ups": 25,
+      "num_comments": 10
+    },
+    {
+      "source": "hackernews",
+      "source_label": "show_hn",
+      "object_id": "48354865",
+      "title": "Show HN: Postbase – 100% open source Alternative to Firebase and Supabase [video]",
+      "selftext": "Postbase – 100% Opensource Alternative to Firebase and Supabase",
+      "ups": 11,
+      "num_comments": 4
+    },
+    {
+      "source": "producthunt",
+      "source_label": "Venture Capital",
+      "object_id": "1157940",
+      "title": "Fundraisly",
+      "selftext": "Fundraisly: ultimate AI agent for fundraising. Built by founders who raised over $1B.",
+      "ups": 1099,
+      "num_comments": 270
+    },
+    {
+      "source": "producthunt",
+      "source_label": "Email",
+      "object_id": "1144083",
+      "title": "Mailwarm 2.0",
+      "selftext": "Most founders rely on email to grow, but emails don't land in the inbox by magic.",
+      "ups": 577,
+      "num_comments": 104
+    },
+    {
+      "source": "producthunt",
+      "source_label": "Sales",
+      "object_id": "1149728",
+      "title": "Elentaria",
+      "selftext": "Elentaria is the AI operator for B2B.",
+      "ups": 534,
+      "num_comments": 96
+    },
+    {
+      "source": "producthunt",
+      "source_label": "Open Source",
+      "object_id": "1159756",
+      "title": "InsForge Backend Branching",
+      "selftext": "Git-style branching for your entire backend.",
+      "ups": 532,
+      "num_comments": 184
+    }
+  ]
+}

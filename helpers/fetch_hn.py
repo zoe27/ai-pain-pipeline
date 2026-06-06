@@ -80,8 +80,10 @@ def parse_hn_source(config: dict) -> tuple[list[str], list[str], int, str, int, 
     hn = next((s for s in sources if s.get("type") == "hackernews"), None)
     if not hn or not source_enabled(hn):
         return None
+    from radar_common import effective_keywords
+
     tags = hn.get("tags") or ["ask_hn"]
-    keywords = hn.get("keywords") or []
+    keywords = effective_keywords(hn.get("keywords") or [], config)
     min_points = int(hn.get("min_points", hn.get("min_upvotes", 10)))
     date_range = (config.get("filters") or {}).get("date_range", "last_7_days")
     fetch_limit = int(config.get("limit_per_source", 50))
@@ -122,6 +124,7 @@ def filter_posts(
     keywords: list[str],
     *,
     exclude_keywords: list[str] | None = None,
+    config: dict | None = None,
 ) -> list[dict]:
     from radar_common import filter_posts as common_filter
 
@@ -130,6 +133,7 @@ def filter_posts(
         min_score=min_points,
         keywords=keywords,
         exclude_keywords=exclude_keywords or [],
+        config=config,
     )
 
 
@@ -214,17 +218,29 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
             )
             out_path.write_text(json.dumps(payload, ensure_ascii=False) + "\n")
             filtered = filter_posts(
-                posts, min_points, keywords, exclude_keywords=exclude
+                posts,
+                min_points,
+                keywords,
+                exclude_keywords=exclude,
+                config=config,
             )[:top_n]
             if keywords and not filtered and posts:
                 print(
                     f"WARN {tag}: no internet/SaaS keyword matches; "
-                    f"keeping top {top_n} recent (exclude-only filter)",
+                    f"keeping top {top_n} recent (exclude + quality filter)",
                     file=sys.stderr,
                 )
                 filtered = filter_posts(
-                    posts, min_points, [], exclude_keywords=exclude
+                    posts,
+                    min_points,
+                    [],
+                    exclude_keywords=exclude,
+                    config=config,
                 )[:top_n]
+            from hn_comments import enrich_comment_resonance
+
+            for post in filtered:
+                enrich_comment_resonance(post, config)
             top_path = raw_dir / f"{tag}_top.json"
             top_path.write_text(
                 json.dumps(filtered, indent=2, ensure_ascii=False) + "\n"
