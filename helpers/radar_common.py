@@ -46,6 +46,204 @@ BUG_REPORT_BODY_MARKERS = (
     "### link to the code that reproduces",
 )
 
+# Heuristic post kinds for quality filter + eval benchmark
+KIND_PAIN = "pain_candidate"
+KIND_LAUNCH = "product_launch"
+KIND_JOB = "job_seeking"
+KIND_CELEBRATION = "celebration"
+KIND_OTHER = "other"
+
+DEFAULT_PAIN_PHRASES = [
+    "i've tried",
+    "i've done nearly everything",
+    "nothing's working",
+    "no customers",
+    "no customer",
+    "zero users",
+    "zero traction",
+    "what's wrong",
+    "idk how",
+    "don't know what else",
+    "frustrated",
+    "why is it so hard",
+    "am i the only one",
+    "killed my",
+    "locked out",
+    "my business bleeds",
+    "doesn't land in the inbox",
+    "don't land in the inbox",
+    "0 response",
+    "zero response",
+    "losing hope",
+    "still hasn't attracted",
+    "not sure what i did wrong",
+    "no real answer",
+    "no timeline",
+    "tired of parsing",
+    "got really tired",
+]
+
+PRODUCT_LAUNCH_TITLE_RE = re.compile(r"^show\s+hn\s*:", re.I)
+PRODUCT_LAUNCH_BODY_MARKERS = (
+    "hi hn",
+    "we're building",
+    "we are building",
+    "we’re building",
+    "i'm excited to show",
+    "i am excited to show",
+    "excited to show off",
+    "would appreciate any feedback",
+    "feedback welcome",
+    "feedbacks and questions are welcome",
+    "let me know what you think",
+    "try it and let me know",
+    "we'd love for you",
+    "we’d love for you",
+    "built by founders who",
+    "is the ai operator",
+    "is the premium",
+    "ultimate ai agent",
+    "github:",
+    "for anyone interested in trying",
+)
+
+JOB_SEEKING_RE = re.compile(
+    r"(^ask hn:\s*who is hiring|who is hiring\??\s*$|"
+    r"resume review|freelancer\?|looking for (a )?job\b|"
+    r"job search thread|interview prep\b)",
+    re.I,
+)
+
+CELEBRATION_RE = re.compile(
+    r"(first (paying )?customer|hit \$\d|reached \$\d|"
+    r"sold my (startup|company)|mrr milestone|"
+    r"we hit \d+k users|just launched and got \d+ signups)",
+    re.I,
+)
+
+
+def domain_context(config: dict) -> dict:
+    ctx = config.get("domain_context") or {}
+    return {
+        "domain": (ctx.get("domain") or "").strip(),
+        "target_user": (ctx.get("target_user") or "").strip(),
+        "hypothesis": (ctx.get("hypothesis") or "").strip(),
+        "known_competitors": list(ctx.get("known_competitors") or []),
+        "search_keywords": [
+            k.strip().lower() for k in (ctx.get("search_keywords") or []) if k.strip()
+        ],
+    }
+
+
+def effective_keywords(base: list[str], config: dict) -> list[str]:
+    """Merge per-source keywords with domain_context.search_keywords (deduped)."""
+    extra = domain_context(config)["search_keywords"]
+    seen: set[str] = set()
+    out: list[str] = []
+    for kw in list(base or []) + extra:
+        low = kw.lower().strip()
+        if low and low not in seen:
+            seen.add(low)
+            out.append(kw)
+    return out
+
+
+def quality_settings(config: dict) -> dict:
+    flt = config.get("filters") or {}
+    q = flt.get("quality") or {}
+    return {
+        "enabled": q.get("enabled", True) is not False,
+        "drop_product_launches": q.get("drop_product_launches", True) is not False,
+        "drop_job_seeking": q.get("drop_job_seeking", True) is not False,
+        "drop_celebrations": q.get("drop_celebrations", True) is not False,
+        "require_pain_signal_for_show_hn": q.get(
+            "require_pain_signal_for_show_hn", True
+        )
+        is not False,
+        "drop_producthunt_launches": q.get("drop_producthunt_launches", True)
+        is not False,
+        "pain_phrases": [
+            p.lower() for p in (q.get("pain_phrases") or DEFAULT_PAIN_PHRASES)
+        ],
+    }
+
+
+def has_pain_signal(post: dict, pain_phrases: list[str] | None = None) -> bool:
+    text = haystack(post)
+    phrases = pain_phrases or DEFAULT_PAIN_PHRASES
+    return any(p in text for p in phrases)
+
+
+def is_product_launch(post: dict) -> bool:
+    title = (post.get("title") or "").strip()
+    body = haystack(post)
+    label = (post.get("source_label") or "").lower()
+    if post.get("source") == "producthunt":
+        return True
+    if label == "show_hn" or PRODUCT_LAUNCH_TITLE_RE.match(title):
+        if any(m in body for m in PRODUCT_LAUNCH_BODY_MARKERS):
+            return True
+        if post.get("url") and len((post.get("selftext") or "")) > 200:
+            return True
+    return False
+
+
+def is_job_seeking(post: dict) -> bool:
+    title = post.get("title") or ""
+    if JOB_SEEKING_RE.search(title):
+        return True
+    # "laid off" + SaaS marketing is pain, not job thread
+    text = haystack(post)
+    if "laid off" in text and any(
+        k in text for k in ("market my saas", "marketing my saas", "my saas")
+    ):
+        return False
+    if "laid off" in text and "who is hiring" not in text:
+        return False
+    return JOB_SEEKING_RE.search(text) is not None
+
+
+def is_celebration(post: dict) -> bool:
+    return CELEBRATION_RE.search(haystack(post)) is not None
+
+
+def classify_post(post: dict) -> str:
+    """Heuristic label for eval benchmark (not LLM)."""
+    if is_job_seeking(post):
+        return KIND_JOB
+    if is_celebration(post):
+        return KIND_CELEBRATION
+    if is_product_launch(post):
+        return KIND_LAUNCH
+    if has_pain_signal(post):
+        return KIND_PAIN
+    label = (post.get("source_label") or "").lower()
+    if label == "ask_hn":
+        return KIND_PAIN
+    return KIND_OTHER
+
+
+def should_drop_quality(post: dict, config: dict) -> str | None:
+    """Return drop reason string, or None if post should be kept."""
+    q = quality_settings(config)
+    if not q["enabled"]:
+        return None
+    if q["drop_job_seeking"] and is_job_seeking(post):
+        return "job_seeking"
+    if q["drop_celebrations"] and is_celebration(post):
+        return "celebration"
+    if post.get("source") == "producthunt" and q["drop_producthunt_launches"]:
+        return "producthunt_launch"
+    if q["drop_product_launches"] and is_product_launch(post):
+        return "product_launch"
+    label = (post.get("source_label") or "").lower()
+    title = (post.get("title") or "").lower()
+    is_show = label == "show_hn" or title.startswith("show hn:")
+    if is_show and q["require_pain_signal_for_show_hn"]:
+        if not has_pain_signal(post, q["pain_phrases"]):
+            return "show_hn_no_pain_signal"
+    return None
+
 
 def global_filters(config: dict) -> dict:
     """Shared filter knobs from config.filters."""
@@ -97,6 +295,8 @@ def filter_posts(
     source: str | None = None,
     github_product_pain: bool = False,
     pain_keywords: list[str] | None = None,
+    config: dict | None = None,
+    quality_filter: bool = True,
 ) -> list[dict]:
     keywords = keywords or []
     exclude_keywords = exclude_keywords or []
@@ -117,6 +317,8 @@ def filter_posts(
             continue
         if source and post.get("source") != source:
             continue
+        if config and quality_filter and should_drop_quality(post, config):
+            continue
         if github_product_pain and looks_like_framework_bug_issue(post):
             if not matches_keywords(post, pain_keywords):
                 continue
@@ -128,6 +330,24 @@ def filter_posts(
         out.append(post)
     out.sort(key=lambda p: p["ups"], reverse=True)
     return out
+
+
+def filter_posts_legacy(
+    posts: list[dict],
+    *,
+    min_score: int,
+    keywords: list[str] | None = None,
+    exclude_keywords: list[str] | None = None,
+) -> list[dict]:
+    """v0.4 behavior without quality layer — for before/after eval."""
+    return filter_posts(
+        posts,
+        min_score=min_score,
+        keywords=keywords,
+        exclude_keywords=exclude_keywords,
+        config=None,
+        quality_filter=False,
+    )
 
 
 def load_dotenv(path: pathlib.Path) -> None:

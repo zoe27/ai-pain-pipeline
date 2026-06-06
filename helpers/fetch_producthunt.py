@@ -16,6 +16,7 @@ import time
 from radar_common import (
     ROOT,
     created_after_iso,
+    effective_keywords,
     filter_posts,
     http_post_json,
     limits,
@@ -153,13 +154,19 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
             if ph["topics"].intersection({t.lower() for t in p.get("topics") or []})
         ]
 
-    filtered = filter_posts(posts, min_score=ph["min_votes"], keywords=ph["keywords"])[:top_n]
-    if ph["keywords"] and not filtered and posts:
+    ph_keywords = effective_keywords(ph["keywords"], config)
+    filtered = filter_posts(
+        posts,
+        min_score=ph["min_votes"],
+        keywords=ph_keywords,
+        config=config,
+    )[:top_n]
+    if ph_keywords and not filtered and posts:
         print(
-            f"WARN producthunt: no keyword matches; keeping top {top_n} by votes",
+            f"WARN producthunt: no keyword matches after quality filter; "
+            f"skipping fallback (PH launches excluded by default)",
             file=sys.stderr,
         )
-        filtered = filter_posts(posts, min_score=ph["min_votes"])[:top_n]
 
     top_path = raw_dir / "producthunt_top.json"
     top_path.write_text(json.dumps(filtered, indent=2, ensure_ascii=False) + "\n")

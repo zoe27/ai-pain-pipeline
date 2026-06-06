@@ -2,10 +2,18 @@
 
 | 文件 | 用途 |
 |------|------|
-| `radar.example.yaml` | 阶段 1 默认：**internet_saas** 聚焦；HN + PH + Reddit 开，GitHub 关 |
+| `radar.example.yaml` | 阶段 1 默认 v0.5：**internet_saas** + 质量硬过滤；HN + PH 开，GitHub/Reddit 关 |
 | `radar.reddit.example.yaml` | 仅 Reddit 单源调试（OAuth） |
 
-## 默认开启的渠道（v0.4）
+## 质量衡量
+
+```bash
+python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
+```
+
+指标与成功标准见 [`docs/radar_quality.md`](../docs/radar_quality.md)。
+
+## 默认开启的渠道（v0.5）
 
 | 渠道 | 凭证 |
 |------|------|

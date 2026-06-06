@@ -13,7 +13,8 @@
 | `fetch_github_issues.py <pid>` | GitHub REST Issues（`GITHUB_TOKEN` 可选） | 单源调试 |
 | `fetch_producthunt.py <pid>` | Product Hunt GraphQL（需 `PRODUCTHUNT_TOKEN`） | 单源调试 |
 | `fetch_reddit.py <pid>` | OAuth 抓取 Reddit | 单源调试（需 API 批准） |
-| `radar_common.py` | 多源 fetch 共享：YAML、HTTP、过滤、合并 | 被上述 fetch 脚本 import |
+| `radar_common.py` | 多源 fetch 共享：YAML、HTTP、过滤、质量硬规则、合并 | 被上述 fetch 脚本 import |
+| `eval_radar_quality.py` | benchmark 对比 v0.4/v0.5 过滤指标（precision/recall/leak） | 优化验证 / CI |
 | `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
 | `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
 | `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |
