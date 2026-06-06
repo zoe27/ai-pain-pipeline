@@ -214,11 +214,11 @@ def main() -> None:
     print(f"# Radar quality eval — {bench_id}")
     print(f"Config: {args.config.relative_to(ROOT)}")
     print_report("v0.4 legacy (no quality filter)", legacy_metrics, legacy_pass, legacy_fail)
-    print_report("v0.5 quality filter", quality_metrics, quality_pass, quality_fail)
+    print_report("v0.6 quality filter", quality_metrics, quality_pass, quality_fail)
 
     delta_precision = quality_metrics["pain_precision"] - legacy_metrics["pain_precision"]
     delta_leak = legacy_metrics["product_launch_leak_rate"] - quality_metrics["product_launch_leak_rate"]
-    print("\n## Delta (v0.5 − v0.4)")
+    print("\n## Delta (v0.6 − v0.4)")
     print(f"- pain_precision: {delta_precision:+.1%}")
     print(f"- launch leak reduction: {delta_leak:+.1%}")
     print(f"- kept_count: {quality_metrics['kept_count'] - legacy_metrics['kept_count']:+d}")

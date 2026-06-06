@@ -79,8 +79,58 @@ DEFAULT_PAIN_PHRASES = [
     "not sure what i did wrong",
     "no real answer",
     "no timeline",
-    "tired of parsing",
-    "got really tired",
+]
+
+# Internet/SaaS business pain topics (not meta-web / pure DX)
+BUSINESS_PAIN_KEYWORDS = (
+    "saas",
+    "startup",
+    "customers",
+    "customer",
+    "mrr",
+    "arr",
+    "revenue",
+    "churn",
+    "billing",
+    "pricing",
+    "marketing",
+    "acquisition",
+    "onboarding",
+    "subscription",
+    "b2b",
+    "outreach",
+    "inbox",
+    "founder",
+    "users",
+    "locked out",
+    "suspended",
+    "google cloud",
+    "vendor",
+)
+
+OFF_TOPIC_META_WEB_RE = re.compile(
+    r"(llm\.txt|/llm\.txt|gopher web|gemini web|markdown render|"
+    r"web browsers like chrome|parsing the standard marketing)",
+    re.I,
+)
+
+COMMENT_RESONANCE_PHRASES = (
+    "+1",
+    "same issue",
+    "same problem",
+    "me too",
+    "we had this",
+    "we've had this",
+    "happened to me",
+    "happened to us",
+    "this happened",
+    "exact same",
+)
+
+PAIN_THEME_RULES: list[tuple[str, tuple[str, ...]]] = [
+    ("vendor_lockin", ("locked out", "suspended", "google cloud", "vendor", "aws", "account")),
+    ("gtm_distribution", ("no customers", "market my saas", "marketing", "0 response", "zero traction", "cold outreach")),
+    ("email_deliverability", ("inbox", "deliverability", "warmup", "don't land")),
 ]
 
 PRODUCT_LAUNCH_TITLE_RE = re.compile(r"^show\s+hn\s*:", re.I)
@@ -165,6 +215,13 @@ def quality_settings(config: dict) -> dict:
         "pain_phrases": [
             p.lower() for p in (q.get("pain_phrases") or DEFAULT_PAIN_PHRASES)
         ],
+        "require_business_pain_for_ask_hn": q.get(
+            "require_business_pain_for_ask_hn", True
+        )
+        is not False,
+        "drop_off_topic_meta_web": q.get("drop_off_topic_meta_web", True) is not False,
+        "fetch_comment_resonance": q.get("fetch_comment_resonance", True) is not False,
+        "min_comment_resonance": int(q.get("min_comment_resonance", 0)),
     }
 
 
@@ -172,6 +229,51 @@ def has_pain_signal(post: dict, pain_phrases: list[str] | None = None) -> bool:
     text = haystack(post)
     phrases = pain_phrases or DEFAULT_PAIN_PHRASES
     return any(p in text for p in phrases)
+
+
+def has_business_pain_topic(post: dict) -> bool:
+    text = haystack(post)
+    return any(k in text for k in BUSINESS_PAIN_KEYWORDS)
+
+
+def is_off_topic_meta_web(post: dict) -> bool:
+    """Meta-web / llm.txt threads — 'marketing' in prose must not count as SaaS GTM pain."""
+    text = haystack(post)
+    if not OFF_TOPIC_META_WEB_RE.search(text):
+        return False
+    strong = (
+        "saas",
+        "customers",
+        "customer",
+        "mrr",
+        "arr",
+        "churn",
+        "billing",
+        "subscription",
+        "startup killed",
+        "locked out",
+        "no customers",
+        "market my saas",
+        "cold outreach",
+        "0 response",
+    )
+    return not any(k in text for k in strong)
+
+
+def detect_pain_themes(post: dict) -> list[str]:
+    text = haystack(post)
+    return [name for name, keys in PAIN_THEME_RULES if any(k in text for k in keys)]
+
+
+def count_comment_resonance_in_texts(texts: list[str]) -> int:
+    count = 0
+    for raw in texts:
+        low = raw.lower()
+        for phrase in COMMENT_RESONANCE_PHRASES:
+            if phrase in low:
+                count += 1
+                break
+    return count
 
 
 def is_product_launch(post: dict) -> bool:
@@ -215,10 +317,9 @@ def classify_post(post: dict) -> str:
         return KIND_CELEBRATION
     if is_product_launch(post):
         return KIND_LAUNCH
-    if has_pain_signal(post):
+    if has_pain_signal(post) and has_business_pain_topic(post):
         return KIND_PAIN
-    label = (post.get("source_label") or "").lower()
-    if label == "ask_hn":
+    if has_pain_signal(post) and not is_off_topic_meta_web(post):
         return KIND_PAIN
     return KIND_OTHER
 
@@ -242,6 +343,19 @@ def should_drop_quality(post: dict, config: dict) -> str | None:
     if is_show and q["require_pain_signal_for_show_hn"]:
         if not has_pain_signal(post, q["pain_phrases"]):
             return "show_hn_no_pain_signal"
+    is_ask = label == "ask_hn" or title.startswith("ask hn:")
+    if is_ask and q["drop_off_topic_meta_web"] and is_off_topic_meta_web(post):
+        return "off_topic_meta_web"
+    if is_ask and q["require_business_pain_for_ask_hn"]:
+        if not has_business_pain_topic(post) and not has_pain_signal(
+            post, q["pain_phrases"]
+        ):
+            return "ask_hn_no_business_pain"
+    min_res = q["min_comment_resonance"]
+    if min_res > 0 and is_ask:
+        resonance = int(post.get("comment_resonance") or 0)
+        if resonance < min_res and not has_pain_signal(post, q["pain_phrases"]):
+            return "low_comment_resonance"
     return None
 
 

@@ -237,6 +237,10 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
                     exclude_keywords=exclude,
                     config=config,
                 )[:top_n]
+            from hn_comments import enrich_comment_resonance
+
+            for post in filtered:
+                enrich_comment_resonance(post, config)
             top_path = raw_dir / f"{tag}_top.json"
             top_path.write_text(
                 json.dumps(filtered, indent=2, ensure_ascii=False) + "\n"

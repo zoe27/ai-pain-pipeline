@@ -14,7 +14,9 @@ description: 抓取 HN / GitHub Issues / Product Hunt / Reddit 上 SaaS / 开发
 | 参数 | 必需 | 默认 | 说明 |
 |------|------|------|------|
 | `pipeline_id` | 否 | 自动生成 `pipe_YYYY-MM-DD_NNN` | 现有 pipeline 续跑时传入 |
-| `config_path` | 否 | `configs/radar.example.yaml` | RadarConfig YAML 路径 |
+| `config_path` | 否 | `configs/radar.example.yaml` | RadarConfig YAML 路径（v0.6 含 `filters.quality`） |
+
+**可选 Stage 0**：先跑 `domain-focus` skill 产出 `runs/{pid}/domain_context.json`，再把 `search_keywords` 写入 config 的 `domain_context`。
 
 ## 输出
 
@@ -39,6 +41,14 @@ python3 helpers/fetch_radar.py {pipeline_id} --config {config_path}
 ```
 
 合并顺序：hackernews → github_issues → producthunt → reddit。单源失败 WARN 并继续；**全部源无数据 → 退出非零**。**禁止**复用其他 pipeline 的旧 `_raw`。
+
+抓取完成后 helper 自动写 `runs/{pid}/_raw/radar_signals.json`（跨帖主题 + `comment_resonance`），供 Stage 2 使用。
+
+**质量回归**（改过滤规则后必跑）：
+
+```bash
+python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
+```
 
 | 源 | `enabled` 默认 | 凭证 | 单源调试 |
 |----|----------------|------|----------|

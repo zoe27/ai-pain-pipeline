@@ -1,0 +1,29 @@
+name: radar-quality
+
+on:
+  push:
+    paths:
+      - "helpers/radar_common.py"
+      - "helpers/eval_radar_quality.py"
+      - "helpers/fetch_*.py"
+      - "benchmarks/**"
+      - "configs/radar.example.yaml"
+  pull_request:
+    paths:
+      - "helpers/**"
+      - "benchmarks/**"
+      - "configs/radar.example.yaml"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml jsonschema
+      - name: Radar quality benchmark (v0.6 must PASS)
+        run: |
+          python3 helpers/eval_radar_quality.py \
+            --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json

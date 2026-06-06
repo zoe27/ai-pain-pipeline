@@ -11,6 +11,7 @@
 | `pain_point.schema.json` | 阶段 1 输出 |
 | `scored_pain_point.schema.json` | 阶段 2 输出 |
 | `opportunity.schema.json` | 阶段 3 输出 ✅ |
+| `domain_context.schema.json` | 阶段 0 领域定向 ✅ |
 | `prd.schema.json` | 阶段 4 输出 |
 | `tech_spec.schema.json` | 阶段 5 输出 |
 | `pipeline_state.schema.json` | 全局状态机 |

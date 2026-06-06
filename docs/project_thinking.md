@@ -100,13 +100,38 @@ Stage 1 的 prompt 读这个上下文，Stage 2 的 ICE 评分也用它调整权
 
 ---
 
-## 三、v0.5 已落地（可衡量）
+## 三、已落地路线图
+
+### v0.5 — 可衡量基线
 
 | 项 | 实现 |
 |----|------|
-| 硬过滤 Show HN / PH 产品发布 | `filters.quality` in `configs/radar.example.yaml` |
-| 痛点句式（show_hn） | `require_pain_signal_for_show_hn` + `DEFAULT_PAIN_PHRASES` |
-| `domain_context` | config 顶栏 `search_keywords` 追加到各源 keywords |
-| **如何衡量成功** | `python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json` |
+| 硬过滤 Show HN / PH 产品发布 | `filters.quality` |
+| 痛点句式（show_hn） | `DEFAULT_PAIN_PHRASES` |
+| benchmark + eval | `benchmarks/`, `eval_radar_quality.py` |
+
+### v0.6 — 本轮完成
+
+| 项 | 实现 |
+|----|------|
+| ask_hn 业务痛点 / 排除元 Web 讨论 | `require_business_pain_for_ask_hn`, `drop_off_topic_meta_web` |
+| HN 评论共鸣信号 | `hn_comments.py` → `comment_resonance` |
+| 跨帖主题聚类 | `compute_radar_signals.py` → `radar_signals.json` |
+| Stage 0 领域对话 | `domain-focus` skill + `build_domain_context.py` |
+| Stage 2 外部信号 | `market_signals.comment_resonance` / `theme_mentions` |
+| CI 门禁 | `.github/workflows/radar-quality.yml` |
+| **成功标准** | pain_precision **100%**, pain_recall 100%, launch_leak 0% |
+
+```bash
+python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
+```
 
 详见 [`docs/radar_quality.md`](radar_quality.md)。
+
+### 待扩展（非阻塞）
+
+| 项 | 说明 |
+|----|------|
+| G2 / App Store / Twitter | 高信噪比源，需独立 fetcher |
+| Google Trends | Stage 2 enrich |
+| HN 定向关键词搜索 | project #4，独立 CLI |

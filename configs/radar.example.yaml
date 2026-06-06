@@ -1,22 +1,24 @@
-# Pain Radar — internet / SaaS product pains (v0.5)
-# 聚焦：线上业务、SaaS、独立开发、获客/留存/变现 —— 非纯技术 bug、非时政/生活杂谈
+# Pain Radar — internet / SaaS product pains (v0.6)
 # 质量评估: python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
 # 统一抓取: python3 helpers/fetch_radar.py <pipeline_id> --config configs/radar.example.yaml
 
-# 领域锚点（可选）：收窄爬取关键词 + Stage 1/2 prompt 上下文
 domain_context:
   domain: "internet SaaS / indie founders"
   target_user: "solo founders, bootstrapped SaaS builders"
   hypothesis: ""
   known_competitors: []
-  search_keywords: []       # 追加到各源 keywords，如 ["gtm", "cold email"]
+  search_keywords: []
+  ice_priority:
+    impact: 1.0
+    confidence: 1.0
+    ease: 1.0
 
 sources:
   - type: hackernews
     enabled: true
     tags:
-      - ask_hn          # 主战场：创始人/开发者提问
-      - show_hn         # 质量过滤会剔除产品发布帖
+      - ask_hn
+      - show_hn
     keywords:
       - saas
       - startup
@@ -95,11 +97,15 @@ filters:
     - quantization
   quality:
     enabled: true
-    drop_product_launches: true       # Show HN 产品发布硬过滤
-    drop_producthunt_launches: true   # PH 本质是产品发布，默认全挡
+    drop_product_launches: true
+    drop_producthunt_launches: true
     drop_job_seeking: true
     drop_celebrations: true
     require_pain_signal_for_show_hn: true
+    require_business_pain_for_ask_hn: true
+    drop_off_topic_meta_web: true
+    fetch_comment_resonance: true
+    min_comment_resonance: 0
 
 limit_per_source: 50
 top_per_source: 10

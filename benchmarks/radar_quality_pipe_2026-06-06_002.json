@@ -4,7 +4,7 @@
   "source_pipeline": "pipe_2026-06-06_002",
   "success_criteria": {
     "pain_recall_min": 1.0,
-    "pain_precision_min": 0.75,
+    "pain_precision_min": 1.0,
     "product_launch_leak_max": 0.0,
     "min_kept": 3
   },

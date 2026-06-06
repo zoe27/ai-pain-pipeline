@@ -2,7 +2,7 @@
 
 | 文件 | 用途 |
 |------|------|
-| `radar.example.yaml` | 阶段 1 默认 v0.5：**internet_saas** + 质量硬过滤；HN + PH 开，GitHub/Reddit 关 |
+| `radar.example.yaml` | 阶段 1 默认 v0.6：**internet_saas** + 业务痛点/评论共鸣/主题聚类；HN + PH 开 |
 | `radar.reddit.example.yaml` | 仅 Reddit 单源调试（OAuth） |
 
 ## 质量衡量

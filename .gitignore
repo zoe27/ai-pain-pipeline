@@ -7,3 +7,4 @@ runs/
 .claude/*
 !.claude/skills/
 !.claude/skills/**
+__pycache__/
