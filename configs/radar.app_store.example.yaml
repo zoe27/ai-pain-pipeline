@@ -1,0 +1,55 @@
+# Pain Radar — App Store 1–2★ reviews (issue #7 MVP)
+# 单源调试: python3 helpers/fetch_app_store.py <pipeline_id> --config configs/radar.app_store.example.yaml
+# 注意: 许多 App 的 RSS 已返回空 feed；QuickBooks Workforce (864076487) 经实测可用。
+
+domain_context:
+  domain: "internet SaaS / indie founders"
+  target_user: "solo founders, bootstrapped SaaS builders"
+  hypothesis: ""
+  known_competitors: []
+  search_keywords: []
+  ice_priority:
+    impact: 1.0
+    confidence: 1.0
+    ease: 1.0
+
+sources:
+  - type: hackernews
+    enabled: false
+
+  - type: producthunt
+    enabled: false
+
+  - type: app_store
+    enabled: true
+    app_ids:
+      - "864076487"  # QuickBooks Workforce — RSS 有数据
+    search_terms:
+      - quickbooks billing
+      - stripe dashboard
+    max_stars: 2
+    max_pages: 2
+    min_points: 10
+    keywords: []  # 可选；留空则保留全部 ≤max_stars 评论
+
+filters:
+  focus: internet_saas
+  language: en
+  date_range: last_month
+  exclude_keywords:
+    - lego
+    - parenting
+  quality:
+    enabled: true
+    drop_product_launches: true
+    drop_producthunt_launches: true
+    drop_job_seeking: true
+    drop_celebrations: true
+    require_pain_signal_for_show_hn: true
+    require_business_pain_for_ask_hn: true
+    drop_off_topic_meta_web: true
+    fetch_comment_resonance: false
+    min_comment_resonance: 0
+
+limit_per_source: 50
+top_per_source: 10

@@ -27,3 +27,5 @@ jobs:
         run: |
           python3 helpers/eval_radar_quality.py \
             --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
+          python3 helpers/eval_radar_quality.py \
+            --benchmark benchmarks/radar_quality_app_store_v1.json

@@ -26,7 +26,7 @@ SENTIMENT_ENUM = {"negative", "positive", "neutral", "mixed"}
 # Deterministic UUID v5 namespace — same permalink always produces same id.
 # This makes stage 1 idempotent so stage 2 judgments don't break on rerun.
 PAIN_NS = uuid.uuid5(uuid.NAMESPACE_URL, "ai-pipeline-arch:pain-radar")
-VALID_SOURCES = {"reddit", "hackernews", "github_issues", "producthunt"}
+VALID_SOURCES = {"reddit", "hackernews", "github_issues", "producthunt", "app_store"}
 
 
 def post_source_url(post: dict) -> str:
@@ -51,6 +51,8 @@ def post_stable_id(post: dict) -> str:
         return f"github_issues:{repo}#{oid}"
     if source == "producthunt":
         return f"producthunt:{post.get('object_id', '')}"
+    if source == "app_store":
+        return f"app_store:{post.get('app_id', '')}:{post.get('object_id', '')}"
     if source == "reddit":
         return f"reddit:{post.get('object_id') or post['permalink']}"
     return f"{source}:{post.get('permalink', post.get('object_id', ''))}"

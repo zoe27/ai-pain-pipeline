@@ -8,11 +8,12 @@
 |------|------|--------|
 | `digest.py` | stage 输出 → `.digest.md` + `.digest.zh.md`（有 i18n 时） | 各 stage 末步 |
 | `build_i18n.py <pid> --stage N` | `_judgments/stageN_i18n.json` → `N_*.i18n.json` | 各 stage 翻译步骤 |
-| `fetch_radar.py <pid>` | **多源合并**：HN + GitHub + PH + Reddit（按 config `enabled`） | `pain-radar` skill 步骤 2–3（推荐） |
+| `fetch_radar.py <pid>` | **多源合并**：HN + GitHub + PH + App Store + Reddit（按 config `enabled`） | `pain-radar` skill 步骤 2–3（推荐） |
 | `fetch_hn.py <pid>` | Algolia 抓取 HN（无需 API key） | 单源调试 |
 | `fetch_github_issues.py <pid>` | GitHub REST Issues（`GITHUB_TOKEN` 可选） | 单源调试 |
 | `fetch_producthunt.py <pid>` | Product Hunt GraphQL（需 `PRODUCTHUNT_TOKEN`） | 单源调试 |
 | `fetch_reddit.py <pid>` | OAuth 抓取 Reddit | 单源调试（需 API 批准） |
+| `fetch_app_store.py <pid>` | App Store 1–2★ 评论 RSS（无 API key） | 单源调试 / issue #7 |
 | `radar_common.py` | 多源 fetch 共享：YAML、HTTP、过滤、质量硬规则、合并 | 被上述 fetch 脚本 import |
 | `eval_radar_quality.py` | benchmark 对比 v0.4/v0.6 过滤指标（precision/recall/leak） | 优化验证 / CI |
 | `hn_comments.py` | HN Algolia items API → `comment_resonance` | `fetch_hn.py` |

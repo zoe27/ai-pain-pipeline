@@ -53,6 +53,9 @@ KIND_JOB = "job_seeking"
 KIND_CELEBRATION = "celebration"
 KIND_OTHER = "other"
 
+# Reviews / ratings are inherently pain-oriented; skip HN/PH launch heuristics.
+INHERENT_PAIN_SOURCES = frozenset({"app_store"})
+
 DEFAULT_PAIN_PHRASES = [
     "i've tried",
     "i've done nearly everything",
@@ -311,6 +314,9 @@ def is_celebration(post: dict) -> bool:
 
 def classify_post(post: dict) -> str:
     """Heuristic label for eval benchmark (not LLM)."""
+    if post.get("source") in INHERENT_PAIN_SOURCES:
+        rating = int(post.get("star_rating") or 5)
+        return KIND_PAIN if rating <= 2 else KIND_OTHER
     if is_job_seeking(post):
         return KIND_JOB
     if is_celebration(post):
@@ -326,6 +332,8 @@ def classify_post(post: dict) -> str:
 
 def should_drop_quality(post: dict, config: dict) -> str | None:
     """Return drop reason string, or None if post should be kept."""
+    if post.get("source") in INHERENT_PAIN_SOURCES:
+        return None
     q = quality_settings(config)
     if not q["enabled"]:
         return None

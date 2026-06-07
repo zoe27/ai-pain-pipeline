@@ -1,7 +1,4 @@
-# Pain Radar — internet / SaaS product pains (v0.6)
-# 质量评估: python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
-# 统一抓取: python3 helpers/fetch_radar.py <pipeline_id> --config configs/radar.example.yaml
-
+# Full pipeline run: HN + PH + App Store (issue #7 validation)
 domain_context:
   domain: "internet SaaS / indie founders"
   target_user: "solo founders, bootstrapped SaaS builders"
@@ -40,20 +37,6 @@ sources:
 
   - type: github_issues
     enabled: false
-    mode: product_pain
-    repos:
-      - supabase/supabase
-    labels: []
-    min_comments: 10
-    pain_keywords:
-      - onboarding
-      - billing
-      - pricing
-      - customer
-      - workflow
-      - ux
-      - churn
-      - support
 
   - type: producthunt
     enabled: true
@@ -66,22 +49,13 @@ sources:
 
   - type: reddit
     enabled: false
-    subreddits:
-      - SaaS
-      - startups
-      - Entrepreneur
-      - indiehackers
-    min_upvotes: 10
-    keywords:
-      - customers
-      - mrr
-      - churn
-      - marketing
 
   - type: app_store
-    enabled: false
-    app_ids: []
-    search_terms: []
+    enabled: true
+    app_ids:
+      - "864076487"
+    search_terms:
+      - quickbooks billing
     max_stars: 2
     max_pages: 2
     min_points: 10
