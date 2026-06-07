@@ -49,7 +49,13 @@ python3 helpers/build_domain_context.py {pipeline_id}
 python3 helpers/merge_radar_config.py {pipeline_id} --base configs/radar.example.yaml
 ```
 
-可选 `--base configs/radar.indie_gtm.example.yaml` 或 `configs/radar.cicd.example.yaml` 作为模板。
+可选 `--base` 模板：
+
+| 模板 | 领域 |
+|------|------|
+| `configs/radar.indie_gtm.example.yaml` | indie GTM / 零客户 |
+| `configs/radar.cicd.example.yaml` | CI/CD / DevOps |
+| `configs/radar.pdf.example.yaml` | PDF 解析 / OCR / 表单自动化 |
 
 ## 下游使用
 
