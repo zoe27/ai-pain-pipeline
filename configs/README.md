@@ -4,6 +4,10 @@
 |------|------|
 | `radar.example.yaml` | 阶段 1 默认 v0.6：**internet_saas** + 业务痛点/评论共鸣/主题聚类；HN + PH 开；App Store 默认关 |
 | `radar.app_store.example.yaml` | App Store 1–2★ 差评单源（issue #7 MVP） |
+| `radar.indie_gtm.example.yaml` | Stage 0 示例：indie GTM / 零客户（#8） |
+| `radar.cicd.example.yaml` | Stage 0 示例：CI/CD + GitHub product_pain（#8） |
+| `radar.github_smoke.yaml` | GitHub Issues product_pain smoke test（#10） |
+| `radar.full_run.yaml` | HN + PH + App Store 多源验证 |
 | `radar.reddit.example.yaml` | 仅 Reddit 单源调试（OAuth） |
 
 ## 质量衡量
@@ -38,6 +42,26 @@ GitHub Issues 仍默认 `enabled: false`（框架 bug 多）；要开见 `mode: 
 python3 helpers/fetch_app_store.py pipe_test --config configs/radar.app_store.example.yaml
 python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_app_store_v1.json
 ```
+
+## Stage 0 → config 合并（#8）
+
+```bash
+# 1. 写 runs/{pid}/_judgments/stage0.json → build_domain_context.py
+# 2. 合并到本轮专用 config
+python3 helpers/merge_radar_config.py {pipeline_id} --base configs/radar.indie_gtm.example.yaml
+python3 helpers/fetch_radar.py {pipeline_id} --config runs/{pipeline_id}/radar.config.yaml
+```
+
+## GitHub Issues smoke（#10）
+
+默认仍 **关闭** `github_issues`；验证 product_pain 过滤：
+
+```bash
+python3 helpers/smoke_github_issues.py
+# → docs/github_issues_smoke.json（kept/rejected 比例）
+```
+
+2026-06-07 实测：`supabase/supabase` + `vercel/next.js`，keep_rate ≈ 15–25%，框架 bug 被剔除。
 
 ## 尚未实现
 

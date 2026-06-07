@@ -1,0 +1,60 @@
+{
+  "config": "configs/radar.github_smoke.yaml",
+  "mode": "product_pain",
+  "repos": [
+    "supabase/supabase",
+    "vercel/next.js"
+  ],
+  "pain_keywords": [
+    "onboarding",
+    "billing",
+    "pricing",
+    "customer",
+    "workflow",
+    "ux",
+    "churn",
+    "support",
+    "documentation"
+  ],
+  "repos_detail": [
+    {
+      "repo": "supabase/supabase",
+      "fetched": 8,
+      "after_min_comments": 8,
+      "kept": 3,
+      "rejected_framework_bug_heuristic": 5,
+      "rejected_no_pain_keyword": 2,
+      "kept_titles": [
+        "Clarify when to use `getClaims` and `getUser` and discourage usage of `getSession`",
+        "Custom SMTP does not work with Microsoft Office 365 / Outlook > 504 Process Timeout Error",
+        "Self-hosted Logflare with BigQuery backend cannot work out of the box"
+      ]
+    },
+    {
+      "repo": "vercel/next.js",
+      "fetched": 6,
+      "after_min_comments": 6,
+      "kept": 1,
+      "rejected_framework_bug_heuristic": 6,
+      "rejected_no_pain_keyword": 0,
+      "kept_titles": [
+        "Error occurred prerendering page \"/_not-found\" with pageExtensions option"
+      ]
+    }
+  ],
+  "totals": {
+    "fetched": 14,
+    "after_min_comments": 14,
+    "kept_product_pain": 4,
+    "rejected_framework_bug": 11,
+    "rejected_no_pain_keyword": 2,
+    "keep_rate": 0.286,
+    "pass": true
+  },
+  "kept_titles": [
+    "Clarify when to use `getClaims` and `getUser` and discourage usage of `getSession`",
+    "Custom SMTP does not work with Microsoft Office 365 / Outlook > 504 Process Timeout Error",
+    "Self-hosted Logflare with BigQuery backend cannot work out of the box",
+    "Error occurred prerendering page \"/_not-found\" with pageExtensions option"
+  ]
+}

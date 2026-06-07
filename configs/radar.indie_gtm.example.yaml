@@ -1,0 +1,65 @@
+# Stage 0 示例：indie founder GTM / 零客户获客
+# 用法: 复制 domain_context 到 _judgments/stage0.json 或跑 domain-focus skill，再 merge_radar_config.py
+
+domain_context:
+  domain: "internet SaaS / indie GTM"
+  target_user: "solo founders with live product, zero revenue"
+  hypothesis: "Distribution failure is the bottleneck, not product quality"
+  known_competitors: ["Hunter.io", "Mailwarm"]
+  search_keywords:
+    - gtm
+    - cold email
+    - zero customers
+    - no customers
+    - marketing my saas
+    - cold outreach
+    - mrr
+    - traction
+  ice_priority:
+    impact: 1.2
+    confidence: 1.0
+    ease: 1.0
+
+sources:
+  - type: hackernews
+    enabled: true
+    tags:
+      - ask_hn
+    keywords:
+      - saas
+      - startup
+      - customers
+      - marketing
+      - mrr
+    min_points: 10
+
+  - type: github_issues
+    enabled: false
+
+  - type: producthunt
+    enabled: false
+
+  - type: app_store
+    enabled: false
+
+  - type: reddit
+    enabled: false
+
+filters:
+  focus: internet_saas
+  language: en
+  date_range: last_7_days
+  quality:
+    enabled: true
+    drop_product_launches: true
+    drop_producthunt_launches: true
+    drop_job_seeking: true
+    drop_celebrations: true
+    require_pain_signal_for_show_hn: true
+    require_business_pain_for_ask_hn: true
+    drop_off_topic_meta_web: true
+    fetch_comment_resonance: true
+    min_comment_resonance: 0
+
+limit_per_source: 50
+top_per_source: 10

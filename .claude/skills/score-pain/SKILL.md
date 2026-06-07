@@ -30,6 +30,21 @@ description: 对 stage 1 (pain-radar) 产出的痛点用 ICE 框架评分，识�
 | **Ease** | 做产品来解决它有多容易？ | 10 = 一个人 1 个月做出 MVP；5 = 3-6 月 + 集成多 API；1 = 需要监管牌照 / 大数据 / 大团队 |
 | **total** | I × C × E | 1-1000，**helper 自动计算，你不要手算** |
 
+## 外部信号（helper 自动 enrich）
+
+`build_scored_batch.py` 会写入 `market_signals` 并**自动调整 confidence**（上限 10）：
+
+| 信号 | 来源 | confidence 加成 |
+|------|------|----------------|
+| `theme_mentions` ≥ 2 | `_raw/radar_signals.json` 跨帖主题 | +1 |
+| `comment_resonance` ≥ 3 | HN 评论短语计数 | +1 |
+| `comments_48h` ≥ 10（或 ≥5） | Algolia items API，帖发布后 48h 内评论数 | +1 |
+| `google_trends_score` ≥ 60 | Google Trends 近 3 个月兴趣斜率（0–100） | +1 |
+
+Stage 0 的 `ice_priority`（`domain_context.json`）会在计算 total 前缩放 I/C/E（各 ×0.5–2.0，clamp 1–10）。
+
+你在 `ai_reasoning` 中应**引用**上述信号（若存在），说明为何 confidence 高/低。ICE 基础分仍由你判断；helper 只做数值 enrich。
+
 ## ⚠️ 关键判断：不是所有 negative 都是真痛点
 
 **这个 skill 最重要的事**：把假痛点筛掉。常见的假痛点形态（首跑数据归纳）：
@@ -103,8 +118,8 @@ python3 helpers/build_scored_batch.py {pipeline_id}
 
 Helper 自动做：
 - 读 stage 1 输出，按 `id` 关联 judgments（缺判断 → 报错列出哪些 pain_point 没打分）
-- 自动算 `total = impact × confidence × ease`
-- 设 `market_signals: null`（v0.1 不评估，stage 3 填）
+- 读 `domain_context.json` 应用 `ice_priority`；enrich `market_signals`（Trends / 48h 评论 / radar 主题）
+- 自动算 `total = impact × confidence × ease`（confidence 可被外部信号 +1）
 - 严格 jsonschema 校验
 - 写 `runs/{pid}/2_scored_pain_points.json`
 
@@ -147,7 +162,7 @@ python3 helpers/digest.py runs/{pipeline_id}/2_scored_pain_points.json
 
 ## v0.1 限制
 
-- `market_signals` 不评估，固定 null。stage 3 (user research) 填真实数据
-- 不调用外部数据（Google Trends / SimilarWeb / web search）
-- 评分依赖 LLM 主观判断，无 ground truth
+- `competitor_count` / `estimated_market_size_usd` 仍不自动填充（Stage 3 人估）
+- Google Trends 需 `pip install pytrends`；失败时 `google_trends_score` 省略，不中断评分
+- 评分依赖 LLM 主观判断 + helper 信号加成，无 ground truth
 - 不做去重/聚类：同主题多条会各自打分，后果是 top 10 可能 4 条都是 burnout 类

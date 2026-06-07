@@ -22,10 +22,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pyyaml jsonschema
+      - run: pip install -r requirements.txt
       - name: Radar quality benchmark (v0.6 must PASS)
         run: |
           python3 helpers/eval_radar_quality.py \
             --benchmark benchmarks/radar_quality_pipe_2026-06-06_002.json
           python3 helpers/eval_radar_quality.py \
             --benchmark benchmarks/radar_quality_app_store_v1.json
+      - name: GitHub Issues product_pain smoke (#10)
+        run: python3 helpers/smoke_github_issues.py

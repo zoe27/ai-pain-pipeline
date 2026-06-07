@@ -3,6 +3,9 @@
 Inputs (read from runs/{pipeline_id}/):
     - 1_pain_points.json         stage 1 output
     - _judgments/stage2.json     list of {pain_point_id, impact, confidence, ease, ai_reasoning, red_flags}
+    - domain_context.json        optional ice_priority multipliers (Stage 0)
+    - _raw/radar_signals.json    theme cluster + comment_resonance
+    - _raw/top50.json              HN object_id lookup for 48h comment enrich
 
 Output:
     - 2_scored_pain_points.json  valid ScoredPainPointBatch per contracts/scored_pain_point.schema.json
@@ -33,6 +36,13 @@ def build(pipeline_id: str) -> dict:
     if not judg_path.exists():
         raise FileNotFoundError(f"missing judgments: {judg_path}")
 
+    from market_signals_enrich import (
+        apply_confidence_boosts,
+        apply_ice_priority,
+        enrich_for_pain_point,
+        load_top50_object_ids,
+    )
+
     inp = json.loads(inp_path.read_text())
     judgments = json.loads(judg_path.read_text())
 
@@ -47,6 +57,11 @@ def build(pipeline_id: str) -> dict:
     if missing:
         raise ValueError(f"missing judgments for {len(missing)} pain points (first: {missing[0]})")
 
+    ice_priority = None
+    ctx_path = run_dir / "domain_context.json"
+    if ctx_path.is_file():
+        ice_priority = json.loads(ctx_path.read_text()).get("ice_priority")
+
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     signals_path = run_dir / "_raw" / "radar_signals.json"
@@ -58,6 +73,8 @@ def build(pipeline_id: str) -> dict:
         for row in sig.get("posts") or []:
             if row.get("title"):
                 sig_by_title[row["title"]] = row
+
+    hn_ids = load_top50_object_ids(run_dir)
 
     scored = []
     for pp in inp["pain_points"]:
@@ -73,7 +90,9 @@ def build(pipeline_id: str) -> dict:
             if not (3 <= len(r) <= 80):
                 raise ValueError(f"red_flag length out of [3,80]: {r!r}")
 
-        market_signals = None
+        i, c, e = apply_ice_priority(i, c, e, ice_priority)
+
+        market_signals: dict | None = None
         row = sig_by_title.get(pp["title"])
         if row:
             themes = row.get("themes") or []
@@ -82,14 +101,28 @@ def build(pipeline_id: str) -> dict:
                 default=0,
             )
             resonance = int(row.get("comment_resonance") or 0)
-            if theme_mentions >= 2:
-                c = min(10, c + 1)
-            if resonance >= 3:
-                c = min(10, c + 1)
             market_signals = {
                 "comment_resonance": resonance,
                 "theme_mentions": max(theme_mentions, 1) if themes else 1,
             }
+
+        object_id = hn_ids.get(pp["title"])
+        if not object_id and pp.get("source") == "hackernews":
+            # Fallback: parse from source_url
+            url = pp.get("source_url", "")
+            if "id=" in url:
+                object_id = url.split("id=")[-1].split("&")[0]
+
+        extra = enrich_for_pain_point(
+            source=pp.get("source", ""),
+            object_id=object_id,
+            title=pp["title"],
+            keywords=pp.get("extracted_keywords") or [],
+        )
+        if extra or market_signals:
+            market_signals = {**(market_signals or {}), **extra}
+
+        c = apply_confidence_boosts(c, market_signals)
 
         scored.append({
             "pain_point_id": pp["id"],
@@ -100,7 +133,7 @@ def build(pipeline_id: str) -> dict:
                 "ease": e,
                 "total": i * c * e,
             },
-            "market_signals": market_signals,
+            "market_signals": market_signals if market_signals else None,
             "ai_reasoning": j["ai_reasoning"],
             "red_flags": j["red_flags"],
         })
@@ -119,6 +152,9 @@ def build(pipeline_id: str) -> dict:
     import jsonschema
     jsonschema.validate(batch, json.loads(SCHEMA_PATH.read_text()))
     print("✓ jsonschema validation passed")
+
+    enriched = sum(1 for s in scored if s.get("market_signals"))
+    print(f"✓ market_signals enriched: {enriched}/{len(scored)}")
 
     return batch
 
