@@ -6,6 +6,7 @@
 | `radar.app_store.example.yaml` | App Store 1–2★ 差评单源（issue #7 MVP） |
 | `radar.indie_gtm.example.yaml` | Stage 0 示例：indie GTM / 零客户（#8） |
 | `radar.cicd.example.yaml` | Stage 0 示例：CI/CD + GitHub product_pain（#8） |
+| `radar.pdf.example.yaml` | Stage 0 示例：PDF 解析/OCR/表单（PyMuPDF + pdf.js；验证 run `pipe_2026-06-07_003`） |
 | `radar.github_smoke.yaml` | GitHub Issues product_pain smoke test（#10） |
 | `radar.full_run.yaml` | HN + PH + App Store 多源验证 |
 | `radar.reddit.example.yaml` | 仅 Reddit 单源调试（OAuth） |
