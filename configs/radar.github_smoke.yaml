@@ -1,0 +1,68 @@
+# GitHub Issues product_pain smoke test (#10)
+# 单源: python3 helpers/smoke_github_issues.py
+# 或:   python3 helpers/fetch_github_issues.py pipe_github_smoke --config configs/radar.github_smoke.yaml
+
+domain_context:
+  domain: "internet SaaS / product pains from GitHub"
+  target_user: "SaaS builders researching competitor pain signals"
+  hypothesis: ""
+  known_competitors: []
+  search_keywords: []
+  ice_priority:
+    impact: 1.0
+    confidence: 1.0
+    ease: 1.0
+
+sources:
+  - type: hackernews
+    enabled: false
+
+  - type: github_issues
+    enabled: true
+    mode: product_pain
+    repos:
+      - supabase/supabase
+      - vercel/next.js
+    labels: []
+    min_comments: 5
+    pain_keywords:
+      - onboarding
+      - billing
+      - pricing
+      - customer
+      - workflow
+      - ux
+      - churn
+      - support
+      - documentation
+
+  - type: producthunt
+    enabled: false
+
+  - type: app_store
+    enabled: false
+
+  - type: reddit
+    enabled: false
+
+filters:
+  focus: internet_saas
+  language: en
+  date_range: last_month
+  exclude_keywords:
+    - vllm
+    - quantization
+  quality:
+    enabled: true
+    drop_product_launches: true
+    drop_producthunt_launches: true
+    drop_job_seeking: true
+    drop_celebrations: true
+    require_pain_signal_for_show_hn: true
+    require_business_pain_for_ask_hn: true
+    drop_off_topic_meta_web: true
+    fetch_comment_resonance: false
+    min_comment_resonance: 0
+
+limit_per_source: 50
+top_per_source: 10

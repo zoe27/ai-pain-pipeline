@@ -18,7 +18,10 @@
 | `eval_radar_quality.py` | benchmark 对比 v0.4/v0.6 过滤指标（precision/recall/leak） | 优化验证 / CI |
 | `hn_comments.py` | HN Algolia items API → `comment_resonance` | `fetch_hn.py` |
 | `compute_radar_signals.py <pid>` | `top50.json` → `radar_signals.json` 主题聚类 | `fetch_radar.py` |
+| `merge_radar_config.py <pid>` | Stage 0 `domain_context.json` → `runs/{pid}/radar.config.yaml` | `domain-focus` skill |
 | `build_domain_context.py <pid>` | Stage 0 judgments → `domain_context.json` | `domain-focus` skill |
+| `market_signals_enrich.py` | Google Trends 斜率 + HN 48h 评论增速 | `build_scored_batch.py` |
+| `smoke_github_issues.py` | GitHub product_pain 过滤 smoke + JSON 报告 | CI / #10 验证 |
 | `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
 | `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
 | `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |

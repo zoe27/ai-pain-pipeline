@@ -46,13 +46,19 @@ description: Stage 0 领域对话，产出 domain_context.json 作为 pipeline �
 ```bash
 mkdir -p runs/{pipeline_id}/_judgments
 python3 helpers/build_domain_context.py {pipeline_id}
+python3 helpers/merge_radar_config.py {pipeline_id} --base configs/radar.example.yaml
 ```
+
+可选 `--base configs/radar.indie_gtm.example.yaml` 或 `configs/radar.cicd.example.yaml` 作为模板。
 
 ## 下游使用
 
-1. **Stage 1**：把 `search_keywords` 合并进 `configs/radar.example.yaml` 的 `domain_context`，或复制到专用 config
-2. **Stage 2**：读 `domain_context.json` 的 `ice_priority` 调整 ICE 侧重（在 `ai_reasoning` 中说明）
-3. **Stage 1 后**：`_raw/radar_signals.json` 的 `multi_post_themes` 可给 Stage 2 confidence +1 依据
+1. **Stage 1**：用合并后的 config 抓取：
+   ```bash
+   python3 helpers/fetch_radar.py {pipeline_id} --config runs/{pipeline_id}/radar.config.yaml
+   ```
+2. **Stage 2**：`build_scored_batch.py` 自动读 `domain_context.json` 的 `ice_priority` 缩放 ICE；`market_signals_enrich.py` 填 Trends / 48h 评论
+3. **Stage 1 后**：`_raw/radar_signals.json` 的 `multi_post_themes` 与上述信号一起提升 confidence
 
 ## 可选
 

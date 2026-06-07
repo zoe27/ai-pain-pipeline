@@ -95,11 +95,16 @@
                   "type": "integer",
                   "minimum": 1,
                   "description": "Posts in this run sharing the same pain theme cluster"
+                },
+                "comments_48h": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "HN comments in first 48h after post (Algolia items API)"
                 }
               }
             }
           ],
-          "description": "v0.1 always null. Stage 3 (user research) fills with real data."
+          "description": "External signals: Trends slope, HN comment velocity, radar theme cluster."
         },
         "ai_reasoning": {
           "type": "string",
