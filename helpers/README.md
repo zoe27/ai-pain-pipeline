@@ -2,6 +2,8 @@
 
 通用脚本，被 skill 调用。原则：能用 skill 做的就别写代码，这里只放 skill 真的搞不定的事。
 
+Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/permissions.json) 与 [`docs/cursor_agent_permissions.md`](../docs/cursor_agent_permissions.md)。
+
 ## 当前内容
 
 | 脚本 | 用途 | 被谁调 |
