@@ -1,0 +1,38 @@
+{
+  "terminalAllowlist": [
+    "python3 helpers/build_domain_context.py*",
+    "python3 helpers/merge_radar_config.py*",
+    "python3 helpers/fetch_radar.py*",
+    "python3 helpers/fetch_hn.py*",
+    "python3 helpers/fetch_github_issues.py*",
+    "python3 helpers/fetch_producthunt.py*",
+    "python3 helpers/fetch_reddit.py*",
+    "python3 helpers/fetch_app_store.py*",
+    "python3 helpers/build_pain_batch.py*",
+    "python3 helpers/build_scored_batch.py*",
+    "python3 helpers/build_opportunity.py*",
+    "python3 helpers/build_i18n.py*",
+    "python3 helpers/digest.py*",
+    "python3 helpers/eval_radar_quality.py*",
+    "python3 helpers/smoke_github_issues.py*",
+    "python3 helpers/compute_radar_signals.py*",
+    "cd helpers && python3 build_domain_context.py*",
+    "cd helpers && python3 merge_radar_config.py*",
+    "cd helpers && python3 fetch_radar.py*",
+    "cd helpers && python3 build_pain_batch.py*",
+    "cd helpers && python3 build_scored_batch.py*",
+    "cd helpers && python3 build_opportunity.py*",
+    "cd helpers && python3 build_i18n.py*",
+    "cd helpers && python3 digest.py*",
+    "git status*",
+    "git diff*",
+    "git log*",
+    "git branch*",
+    "git show*",
+    "ls *",
+    "mkdir -p runs/*"
+  ],
+  "autoRun": {
+    "instructions": "For the ai-pain-pipeline repo: auto-allow python3 helpers/* pipeline scripts (fetch, build, digest, eval) and read-only git (status, diff, log, branch, show). Always ask before git push, gh pr create, rm -rf, git reset --hard, or any command that reads/writes .env or credentials."
+  }
+}
