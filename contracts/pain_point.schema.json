@@ -47,7 +47,7 @@
         },
         "source": {
           "type": "string",
-          "enum": ["reddit", "hackernews", "github_issues", "producthunt"]
+          "enum": ["reddit", "hackernews", "github_issues", "producthunt", "app_store"]
         },
         "source_url": {
           "type": "string",

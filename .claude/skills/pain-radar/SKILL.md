@@ -1,6 +1,6 @@
 ---
 name: pain-radar
-description: 抓取 HN / GitHub Issues / Product Hunt / Reddit 上 SaaS / 开发者工具相关痛点候选，输出符合 contracts/pain_point.schema.json 的 PainPointBatch JSON 到 runs/{pipeline_id}/1_pain_points.json。当用户要跑 pipeline 阶段 1、做痛点雷达扫描、或者运行 /pain-radar 时使用。
+description: 抓取 HN / GitHub Issues / Product Hunt / App Store / Reddit 上 SaaS / 开发者工具相关痛点候选，输出符合 contracts/pain_point.schema.json 的 PainPointBatch JSON 到 runs/{pipeline_id}/1_pain_points.json。当用户要跑 pipeline 阶段 1、做痛点雷达扫描、或者运行 /pain-radar 时使用。
 ---
 
 # Pain Radar — 阶段 1 痛点雷达
@@ -40,7 +40,7 @@ description: 抓取 HN / GitHub Issues / Product Hunt / Reddit 上 SaaS / 开发
 python3 helpers/fetch_radar.py {pipeline_id} --config {config_path}
 ```
 
-合并顺序：hackernews → github_issues → producthunt → reddit。单源失败 WARN 并继续；**全部源无数据 → 退出非零**。**禁止**复用其他 pipeline 的旧 `_raw`。
+合并顺序：hackernews → github_issues → producthunt → app_store → reddit。单源失败 WARN 并继续；**全部源无数据 → 退出非零**。**禁止**复用其他 pipeline 的旧 `_raw`。
 
 抓取完成后 helper 自动写 `runs/{pid}/_raw/radar_signals.json`（跨帖主题 + `comment_resonance`），供 Stage 2 使用。
 
@@ -55,6 +55,7 @@ python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_
 | `hackernews` | true | 无 | `fetch_hn.py` |
 | `github_issues` | **false** | `GITHUB_TOKEN` 可选 | `fetch_github_issues.py` |
 | `producthunt` | true | `PRODUCTHUNT_TOKEN` 必填 | `fetch_producthunt.py` |
+| `app_store` | **false** | 无（公开 RSS） | `fetch_app_store.py` |
 | `reddit` | true | OAuth + Data API 批准 | `fetch_reddit.py` |
 
 **HN**（[Algolia API](https://hn.algolia.com/api)）：每 `tags` 抓 `limit_per_source`，过滤后 `top_per_source` → `{tag}_top.json`；关键词 0 命中时 WARN 并保留近期 top 帖。
@@ -64,6 +65,8 @@ python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_
 **Product Hunt**：GraphQL 热门帖；可选 `topics` 过滤。
 
 **Reddit**：公开 JSON 会 403，必须 OAuth。配置见 `configs/radar.reddit.example.yaml` 与 `.env.example`。
+
+**App Store**（issue #7）：抓取 1–2★ 用户评论；`app_ids` 或 `search_terms` 指定目标 App。RSS 对许多 App 返回空 feed，先用 `fetch_app_store.py` 单源验证。示例：`configs/radar.app_store.example.yaml`。
 
 **暂缓（#4）**：HN 按用户自定义 idea/关键词定向搜索（独立 CLI），不在本 skill 默认流程。
 
@@ -168,7 +171,7 @@ python3 helpers/digest.py runs/{pipeline_id}/1_pain_points.json
 
 ## 当前限制
 
-- 已实现：**HN、GitHub Issues、Product Hunt、Reddit**（HN + PH + Reddit 默认开；GitHub 默认关）
+- 已实现：**HN、GitHub Issues、Product Hunt、App Store、Reddit**（HN + PH 默认开；App Store / GitHub / Reddit 默认关）
 - 默认聚焦：**internet_saas**（见 `configs/radar.example.yaml` 的 `filters.focus`）
 - 暂缓：**HN 定向关键词/idea 搜索**（#4）
 - 默认每源 `top_per_source: 10`；多源合并后条数 = 各源之和（跨源按 `source:object_id` 去重）

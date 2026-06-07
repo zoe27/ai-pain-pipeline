@@ -187,6 +187,8 @@ def main() -> None:
         labels = bench["labels"]
         criteria = bench.get("success_criteria", criteria)
         bench_id = bench.get("id", args.benchmark.stem)
+        if bench.get("filter"):
+            fk = {**fk, **bench["filter"]}
     elif args.pipeline:
         top50 = ROOT / "runs" / args.pipeline / "_raw" / "top50.json"
         if not top50.is_file():

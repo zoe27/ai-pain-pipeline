@@ -1,6 +1,6 @@
 """Fetch all enabled radar sources and merge into runs/{pipeline_id}/_raw/top50.json.
 
-Runs collectors in order: hackernews → github_issues → producthunt → reddit.
+Runs collectors in order: hackernews → github_issues → producthunt → app_store → reddit.
 Each source is skipped when disabled in config or when credentials are missing.
 
 Usage:
@@ -20,6 +20,7 @@ DEFAULT_CONFIG = ROOT / "configs" / "radar.example.yaml"
 
 
 def collect_all(config: dict, raw_dir: pathlib.Path) -> list[dict]:
+    from fetch_app_store import collect as collect_app_store
     from fetch_github_issues import collect as collect_github
     from fetch_hn import collect as collect_hn
     from fetch_producthunt import collect as collect_ph
@@ -30,6 +31,7 @@ def collect_all(config: dict, raw_dir: pathlib.Path) -> list[dict]:
         ("hackernews", collect_hn),
         ("github_issues", collect_github),
         ("producthunt", collect_ph),
+        ("app_store", collect_app_store),
         ("reddit", collect_reddit),
     ]
     for name, fn in collectors:

@@ -1,0 +1,95 @@
+{
+  "id": "radar_quality_app_store_v1",
+  "description": "Frozen App Store 1-2★ reviews (QuickBooks Workforce) for app_store source eval.",
+  "source_pipeline": "live_fetch_864076487",
+  "success_criteria": {
+    "pain_recall_min": 1.0,
+    "pain_precision_min": 1.0,
+    "product_launch_leak_max": 0.0,
+    "min_kept": 3
+  },
+  "labels": {
+    "14147301459": "pain_candidate",
+    "14145256618": "pain_candidate",
+    "14144896799": "pain_candidate",
+    "14131447246": "pain_candidate",
+    "14119447790": "pain_candidate"
+  },
+  "posts": [
+    {
+      "source": "app_store",
+      "source_label": "QuickBooks Workforce",
+      "object_id": "14147301459",
+      "title": "Nope",
+      "selftext": "Another product ruined by intuit.  Thanks Tsheets.",
+      "ups": 40,
+      "num_comments": 0,
+      "star_rating": 1,
+      "app_id": "864076487",
+      "source_url": "https://apps.apple.com/app/id864076487",
+      "permalink": "app_store:864076487/review/14147301459",
+      "created_at": "2026-06-01T00:00:00Z"
+    },
+    {
+      "source": "app_store",
+      "source_label": "QuickBooks Workforce",
+      "object_id": "14145256618",
+      "title": "Irritated",
+      "selftext": "Good when it works",
+      "ups": 30,
+      "num_comments": 0,
+      "star_rating": 2,
+      "app_id": "864076487",
+      "source_url": "https://apps.apple.com/app/id864076487",
+      "permalink": "app_store:864076487/review/14145256618",
+      "created_at": "2026-06-01T00:00:00Z"
+    },
+    {
+      "source": "app_store",
+      "source_label": "QuickBooks Workforce",
+      "object_id": "14144896799",
+      "title": "Garbage",
+      "selftext": "Extremely unreliable buggy slow to update and information can be extremely incorrect",
+      "ups": 40,
+      "num_comments": 0,
+      "star_rating": 1,
+      "app_id": "864076487",
+      "source_url": "https://apps.apple.com/app/id864076487",
+      "permalink": "app_store:864076487/review/14144896799",
+      "created_at": "2026-06-01T00:00:00Z"
+    },
+    {
+      "source": "app_store",
+      "source_label": "QuickBooks Workforce",
+      "object_id": "14131447246",
+      "title": "Won’t display data",
+      "selftext": "The app frequently doesn’t work and says the message  “unable to load your paychecks”. 6/10 times I try to use it, I can’t get any information from the app.",
+      "ups": 40,
+      "num_comments": 0,
+      "star_rating": 1,
+      "app_id": "864076487",
+      "source_url": "https://apps.apple.com/app/id864076487",
+      "permalink": "app_store:864076487/review/14131447246",
+      "created_at": "2026-06-01T00:00:00Z"
+    },
+    {
+      "source": "app_store",
+      "source_label": "QuickBooks Workforce",
+      "object_id": "14119447790",
+      "title": "Garbage",
+      "selftext": "Hardly works workforce says to “reset app” that doesn’t work app is garbage and nobody can fix it. Do not use if you can avoid. Literally any other application would be better.",
+      "ups": 40,
+      "num_comments": 0,
+      "star_rating": 1,
+      "app_id": "864076487",
+      "source_url": "https://apps.apple.com/app/id864076487",
+      "permalink": "app_store:864076487/review/14119447790",
+      "created_at": "2026-06-01T00:00:00Z"
+    }
+  ],
+  "filter": {
+    "min_score": 10,
+    "keywords": [],
+    "exclude_keywords": []
+  }
+}
