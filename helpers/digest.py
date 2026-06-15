@@ -27,9 +27,19 @@ RECOMMENDATION_ZH = {
     "build": "建议做",
     "skip": "建议跳过",
     "partner": "建议合作",
+    "validate": "建议验证",
 }
 
 CONFIDENCE_ZH = {"high": "高", "medium": "中", "low": "低"}
+
+TIER_ZH = {"high": "高机会", "medium": "中等机会", "low": "低机会", "watch": "观察名单"}
+
+ROOT_CAUSE_ZH = {
+    "structural_permanent": "结构性永久问题",
+    "platform_bug": "平台/版本问题",
+    "regulatory": "监管/合规问题",
+    "unknown": "未知",
+}
 
 
 def _i18n_path(path: pathlib.Path) -> pathlib.Path:
@@ -154,6 +164,26 @@ def digest_stage2(data: dict) -> str:
     out.append(f"- 🟡 **观察名单** (100 ≤ total < 200): {len(mid)} 条")
     out.append(f"- ⚪ **基本可丢弃** (total < 100): {len(low)} 条\n")
 
+    echo = []
+    seen_clusters: set[str] = set()
+    for s in scored:
+        ms = s.get("market_signals") or {}
+        cid = ms.get("cluster_id")
+        if not cid or cid in seen_clusters:
+            continue
+        size = ms.get("cluster_size") or 1
+        if size >= 2:
+            seen_clusters.add(cid)
+            hints = ms.get("commercial_hints") or {}
+            echo.append((cid, size, hints.get("persistence_hint", "?"), hints.get("single_source_echo", False)))
+    if echo:
+        out.append("## Pain clusters (V2 pre-screen)\n")
+        out.append("| cluster | size | persistence hint | single-source echo |")
+        out.append("|---------|-----:|------------------|--------------------|")
+        for cid, size, ph, sse in sorted(echo, key=lambda x: -x[1]):
+            out.append(f"| `{cid}` | {size} | {ph} | {sse} |")
+        out.append("")
+
     out.append(f"## 🟢 值得认真考虑 ({len(high)} 条)\n")
     for i, s in enumerate(high, 1):
         ice = s["ice_score"]
@@ -259,6 +289,229 @@ def digest_stage2_zh(data: dict, i18n: dict) -> str:
     return "\n".join(out)
 
 
+def _append_commercial_sections(out: list[str], data: dict) -> None:
+    commercial = data.get("commercial_assessment")
+    score = data.get("opportunity_score")
+    if not commercial:
+        return
+
+    out.append("## Commercial Assessment (V2)\n")
+    if score:
+        out.append(
+            f"**Opportunity Score**: **{score['total']}** ({score['tier']})  "
+            f"· formula: {score.get('formula', '')}\n"
+        )
+
+    sc = commercial["switching_cost"]
+    wa = commercial["workaround_analysis"]
+    bm = commercial["buyer_mapping"]
+    pe = commercial["persistence"]
+    ec = commercial["economic_impact"]
+
+    out.append("| Dimension | Score | Notes |")
+    out.append("|-----------|------:|-------|")
+    out.append(f"| Pain | {commercial['pain_score']}/10 | |")
+    out.append(f"| Frequency | {commercial['frequency_score']}/10 | |")
+    note = ec["quantification_notes"][:80].replace("|", "\\|")
+    out.append(f"| ROI / Economic Impact | {ec['roi_score']}/10 | {note} |")
+    out.append(
+        f"| Switching willingness | {commercial['switching_willingness']}/10 | "
+        f"cost={sc['score']}/10 |"
+    )
+    out.append(f"| Buyer exists | {bm['buyer_exists_score']}/10 | buyer: {bm['buyer']} |")
+    out.append(
+        f"| Persistence | {pe['score']}/10 | {pe['root_cause_type']} / {pe['owner']} |"
+    )
+    out.append(f"| Competition (÷) | {commercial['competition_score']}/10 | |")
+    out.append(
+        f"| Workaround quality (÷) | {wa['quality_score']}/10 | "
+        f"satisfaction={wa['satisfaction']}/10 |"
+    )
+    out.append("")
+
+    out.append("### Switching Cost Breakdown\n")
+    out.append(
+        f"Data migration {sc.get('data_migration', '?')} · "
+        f"Learning {sc.get('learning_curve', '?')} · "
+        f"Team {sc.get('team_collaboration', '?')} · "
+        f"Ecosystem {sc.get('ecosystem_lock_in', '?')} · "
+        f"Sunk cost {sc.get('sunk_cost', '?')}\n"
+    )
+    out.append(f"{sc['rationale']}\n")
+
+    out.append("### Workarounds Users Already Use\n")
+    for w in wa["current_workarounds"]:
+        out.append(f"- {w}")
+    out.append(f"\n{wa['rationale']}\n")
+
+    out.append("### Buyer Mapping\n")
+    out.append(f"- **User**: {bm['user']}")
+    out.append(f"- **Beneficiary**: {bm['beneficiary']}")
+    out.append(f"- **Buyer**: {bm['buyer']}")
+    out.append(f"- **Champion**: {bm['champion']}\n")
+
+
+def _append_commercial_sections_zh(out: list[str], data: dict, i18n: dict) -> None:
+    commercial = data.get("commercial_assessment")
+    score = data.get("opportunity_score")
+    if not commercial:
+        return
+
+    ca_zh = i18n.get("commercial_assessment") or {}
+    out.append("## 商业判断（V2）\n")
+    if score:
+        tier = TIER_ZH.get(score["tier"], score["tier"])
+        out.append(f"**机会分数**: **{score['total']}**（{tier}）\n")
+
+    sc = commercial["switching_cost"]
+    wa = commercial["workaround_analysis"]
+    bm = commercial["buyer_mapping"]
+    pe = commercial["persistence"]
+    ec = commercial["economic_impact"]
+    sc_zh = ca_zh.get("switching_cost") or {}
+    wa_zh = ca_zh.get("workaround_analysis") or {}
+    bm_zh = ca_zh.get("buyer_mapping") or {}
+    pe_zh = ca_zh.get("persistence") or {}
+    ec_zh = ca_zh.get("economic_impact") or {}
+
+    out.append("| 维度 | 分数 | 说明 |")
+    out.append("|------|-----:|------|")
+    out.append(f"| 痛点强度 | {commercial['pain_score']}/10 | |")
+    out.append(f"| 频率 | {commercial['frequency_score']}/10 | |")
+    roi_note = (ec_zh.get("quantification_notes_zh") or ec["quantification_notes"])[:60]
+    out.append(f"| ROI / 经济影响 | {ec['roi_score']}/10 | {roi_note} |")
+    out.append(
+        f"| 迁移意愿 | {commercial['switching_willingness']}/10 | "
+        f"迁移成本={sc['score']}/10 |"
+    )
+    buyer_label = bm_zh.get("buyer_zh") or bm["buyer"]
+    out.append(f"| 付费主体存在 | {bm['buyer_exists_score']}/10 | 付款人：{buyer_label} |")
+    rc = ROOT_CAUSE_ZH.get(pe["root_cause_type"], pe["root_cause_type"])
+    out.append(f"| 持续性 | {pe['score']}/10 | {rc} |")
+    out.append(f"| 竞争（除） | {commercial['competition_score']}/10 | |")
+    out.append(f"| 替代方案质量（除） | {wa['quality_score']}/10 | |")
+    out.append("")
+
+    out.append("### 迁移成本\n")
+    out.append(f"{sc_zh.get('rationale_zh') or sc['rationale']}\n")
+
+    out.append("### 用户现有替代方案\n")
+    workarounds = wa_zh.get("current_workarounds_zh") or wa["current_workarounds"]
+    for w in workarounds:
+        out.append(f"- {w}")
+    out.append(f"\n{wa_zh.get('rationale_zh') or wa['rationale']}\n")
+
+    out.append("### 付费主体映射\n")
+    out.append(f"- **使用者**：{bm_zh.get('user_zh') or bm['user']}")
+    out.append(f"- **受益者**：{bm_zh.get('beneficiary_zh') or bm['beneficiary']}")
+    out.append(f"- **付款人**：{bm_zh.get('buyer_zh') or bm['buyer']}")
+    out.append(f"- **推动者**：{bm_zh.get('champion_zh') or bm['champion']}\n")
+
+
+def _append_stage3_audit_sections(out: list[str], data: dict) -> None:
+    basis = data.get("confidence_basis")
+    if basis:
+        out.append("## Confidence Basis\n")
+        out.append(
+            f"- Sources: {basis['source_count']} · Products: {basis['product_count']} · "
+            f"Cross-run: {basis['cross_run']}"
+        )
+        if "switch_intent_present" in basis:
+            out.append(f"- Switch intent present: {basis['switch_intent_present']}")
+        if "wtp_signal_present" in basis:
+            out.append(f"- WTP signal present: {basis['wtp_signal_present']}")
+        out.append(f"- Rationale: {basis['rationale']}\n")
+
+    ledger = data.get("evidence_ledger") or []
+    if ledger:
+        out.append("## Evidence Ledger\n")
+        for entry in ledger:
+            out.append(f"### [{entry['strength']}] {entry['claim']}\n")
+            for item in entry["evidence"]:
+                product = f" · {item['product']}" if item.get("product") else ""
+                out.append(f"- `{item['source']}`{product}: \"{item['quote']}\"")
+            assumptions = entry.get("assumptions") or []
+            if assumptions:
+                out.append("")
+                out.append("Assumptions:")
+                for assumption in assumptions:
+                    out.append(f"- {assumption}")
+            out.append("")
+
+    assumptions = data.get("unsupported_assumptions") or []
+    if assumptions:
+        out.append("## Unsupported Assumptions\n")
+        for assumption in assumptions:
+            out.append(f"- {assumption}")
+        out.append("")
+
+    validations = data.get("validation_required") or []
+    if validations:
+        out.append("## Validation Required\n")
+        for i, item in enumerate(validations, 1):
+            out.append(
+                f"{i}. **[{item['priority']}] {item['experiment']}** — "
+                f"{item['success_criterion']}"
+            )
+        out.append("")
+
+
+def _append_stage3_audit_sections_zh(out: list[str], data: dict, i18n: dict) -> None:
+    basis = data.get("confidence_basis")
+    if basis:
+        rationale = i18n.get("confidence_basis_rationale_zh") or basis["rationale"]
+        out.append("## 置信度依据\n")
+        out.append(
+            f"- 来源数：{basis['source_count']} · 产品数：{basis['product_count']} · "
+            f"跨 run：{basis['cross_run']}"
+        )
+        if "switch_intent_present" in basis:
+            out.append(f"- 有明确切换意愿：{basis['switch_intent_present']}")
+        if "wtp_signal_present" in basis:
+            out.append(f"- 有付费/损失信号：{basis['wtp_signal_present']}")
+        out.append(f"- 依据：{rationale}\n")
+
+    ledger = data.get("evidence_ledger") or []
+    ledger_zh = i18n.get("evidence_ledger") or []
+    if ledger:
+        out.append("## 证据账本\n")
+        strength_zh = {"high": "强", "medium": "中", "low": "弱"}
+        for idx, entry in enumerate(ledger):
+            zh = ledger_zh[idx] if idx < len(ledger_zh) else {}
+            claim = zh.get("claim_zh") or entry["claim"]
+            out.append(f"### [{strength_zh.get(entry['strength'], entry['strength'])}] {claim}\n")
+            for item in entry["evidence"]:
+                product = f" · {item['product']}" if item.get("product") else ""
+                out.append(f"- `{item['source']}`{product}: 「{item['quote']}」")
+            assumptions = zh.get("assumptions_zh") or entry.get("assumptions") or []
+            if assumptions:
+                out.append("")
+                out.append("仍需假设：")
+                for assumption in assumptions:
+                    out.append(f"- {assumption}")
+            out.append("")
+
+    assumptions = i18n.get("unsupported_assumptions_zh") or data.get("unsupported_assumptions") or []
+    if assumptions:
+        out.append("## 尚未验证的假设\n")
+        for assumption in assumptions:
+            out.append(f"- {assumption}")
+        out.append("")
+
+    validations = data.get("validation_required") or []
+    validations_zh = i18n.get("validation_required") or []
+    if validations:
+        out.append("## 下一步验证\n")
+        priority_zh = {"high": "高", "medium": "中", "low": "低"}
+        for idx, item in enumerate(validations, 1):
+            zh = validations_zh[idx - 1] if idx - 1 < len(validations_zh) else {}
+            experiment = zh.get("experiment_zh") or item["experiment"]
+            criterion = zh.get("success_criterion_zh") or item["success_criterion"]
+            priority = priority_zh.get(item["priority"], item["priority"])
+            out.append(f"{idx}. **[{priority}] {experiment}** — {criterion}")
+        out.append("")
+
+
 def digest_stage3(data: dict) -> str:
     out = []
     out.append("# Stage 3 — User Research 摘要\n")
@@ -298,6 +551,9 @@ def digest_stage3(data: dict) -> str:
 
     out.append("## 产品假设\n")
     out.append(data["product_hypothesis"] + "\n")
+
+    _append_commercial_sections(out, data)
+    _append_stage3_audit_sections(out, data)
 
     out.append("## 研究结论\n")
     out.append(data["research_notes"])
@@ -342,6 +598,9 @@ def digest_stage3_zh(data: dict, i18n: dict) -> str:
 
     out.append("## 产品假设\n")
     out.append(i18n["product_hypothesis_zh"] + "\n")
+
+    _append_commercial_sections_zh(out, data, i18n)
+    _append_stage3_audit_sections_zh(out, data, i18n)
 
     out.append("## 研究结论\n")
     out.append(i18n["research_notes_zh"])

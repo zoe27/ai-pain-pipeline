@@ -20,13 +20,14 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
 | `eval_radar_quality.py` | benchmark 对比 v0.4/v0.6 过滤指标（precision/recall/leak） | 优化验证 / CI |
 | `hn_comments.py` | HN Algolia items API → `comment_resonance` | `fetch_hn.py` |
 | `compute_radar_signals.py <pid>` | `top50.json` → `radar_signals.json` 主题聚类 | `fetch_radar.py` |
+| `compute_pain_clusters.py <pid>` | stage 1 痛点按主题@产品聚类 + 商业预筛 hints | `build_pain_batch.py`（自动） |
 | `merge_radar_config.py <pid>` | Stage 0 `domain_context.json` → `runs/{pid}/radar.config.yaml` | `domain-focus` skill |
 | `build_domain_context.py <pid>` | Stage 0 judgments → `domain_context.json` | `domain-focus` skill |
 | `market_signals_enrich.py` | Google Trends 斜率 + HN 48h 评论增速 | `build_scored_batch.py` |
 | `smoke_github_issues.py` | GitHub product_pain 过滤 smoke + JSON 报告 | CI / #10 验证 |
 | `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
 | `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
-| `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |
+| `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 自动算 `opportunity_score` | `user-research` skill 步骤 3 |
 
 ## 设计约定
 
@@ -36,6 +37,8 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
   - 拼装 → `helpers/build_*.py`（无 hardcode 数据）
 - **每个 helper 单参数 `pipeline_id`**，路径都从 pid 推导
 - **严格校验**：每个 helper 跑完都用对应的 jsonschema 验一遍，挂了立刻报错
+- **证据可审计**：Stage 3 支持 `evidence_ledger` 和 `confidence_basis`，digest 会展示证据边界与待验证假设
+- **商业判断 V2**：Stage 3 可选 `commercial_assessment`（迁移成本、替代方案、付费主体、持续性、ROI）；`build_opportunity.py` 自动计算 `opportunity_score` 并 WARN recommendation 与 tier 不一致
 - **幂等**：可以重复跑，不会损坏前一阶段输出（但当前会覆盖自己的输出）
 
 ## 预期未来加的

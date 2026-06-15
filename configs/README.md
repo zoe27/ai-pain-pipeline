@@ -9,6 +9,7 @@
 | `radar.pdf.example.yaml` | Stage 0 示例：PDF 解析/OCR/表单（PyMuPDF + pdf.js；验证 run `pipe_2026-06-07_003`） |
 | `radar.github_smoke.yaml` | GitHub Issues product_pain smoke test（#10） |
 | `radar.full_run.yaml` | HN + PH + App Store 多源验证 |
+| `radar.market_balanced.yaml` | 更均衡的全量市场扫描：HN + GitHub Issues + PH + Reddit + App Store 跨品类搜索，降低单产品/单领域偏置 |
 | `radar.reddit.example.yaml` | 仅 Reddit 单源调试（OAuth） |
 
 ## 质量衡量
@@ -30,6 +31,15 @@ python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_
 缺 token 时 `fetch_radar.py` 会 **WARN 并跳过**该源，不会拖垮整次抓取。
 
 GitHub Issues 仍默认 `enabled: false`（框架 bug 多）；要开见 `mode: product_pain` + `pain_keywords`。
+
+## 全量扫描建议
+
+优先用 `radar.market_balanced.yaml` 做新的“全量市场分析”。它会：
+
+- 启用多源抓取，避免只由 HN 或 App Store 决定结论。
+- App Store 不固定 `app_ids`，改用 project management / CRM / invoicing / payroll / support / dev tools 等跨品类搜索词。
+- 保留 Product Hunt launch 作为市场/竞品信号，但 Stage 2/3 应当只有在出现真实 pain signal 时才给高分。
+- 将时间窗口扩大到 `last_14_days`，减少单周异常更新事件对结论的冲击。
 
 新增渠道步骤：加 `fetch_*.py` → `contracts/pain_point.schema.json` 的 `source` enum → `radar.example.yaml` → `fetch_radar.py` 注册。
 

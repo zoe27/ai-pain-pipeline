@@ -197,6 +197,25 @@ def apply_confidence_boosts(
     return min(10, c)
 
 
+def apply_cluster_dampening(
+    confidence: int,
+    market_signals: dict | None,
+) -> int:
+    """Penalize single-product echo chambers that inflate confidence."""
+    if not market_signals:
+        return confidence
+    size = int(market_signals.get("cluster_size") or 1)
+    source_count = int(market_signals.get("cluster_source_count") or 1)
+    if size >= 4 and source_count == 1:
+        return max(1, confidence - 2)
+    if size >= 3 and source_count == 1:
+        return max(1, confidence - 1)
+    hints = market_signals.get("commercial_hints") or {}
+    if hints.get("single_source_echo") and size >= 3:
+        return max(1, confidence - 1)
+    return confidence
+
+
 def apply_ice_priority(
     impact: int,
     confidence: int,

@@ -85,9 +85,66 @@ market_size:
   tam_usd: 50000000
   sam_usd: 5000000
   som_usd: 500000
-recommendation: build | skip | partner
+recommendation: build | validate | skip | partner
 confidence: high | medium | low
+confidence_basis:
+  source_count: 2
+  product_count: 2
+  cross_run: true
+  switch_intent_present: true
+  wtp_signal_present: true
+  rationale: "为什么是这个置信度"
+evidence_ledger:
+  - claim: "核心结论"
+    strength: high | medium | low
+    evidence:
+      - source: app_store
+        product: "QuickBooks"
+        pain_point_id: uuid
+        quote: "真实用户原话"
+    assumptions: ["仍需验证的假设"]
+unsupported_assumptions:
+  - "本轮数据没有直接证明的关键假设"
+validation_required:
+  - experiment: "下一步验证实验"
+    success_criterion: "成功标准"
+    priority: high | medium | low
+commercial_assessment:          # V2 商业判断（可选，由 build_opportunity 自动算 opportunity_score）
+  pain_score: 1-10
+  frequency_score: 1-10
+  switching_willingness: 1-10   # 10 = 主动找替代
+  switching_cost:
+    score: 1-10
+    data_migration / learning_curve / team_collaboration / ecosystem_lock_in / sunk_cost: 1-10
+    rationale: "迁移成本说明"
+  workaround_analysis:
+    current_workarounds: ["用户已在用的替代方案"]
+    quality_score: 1-10         # 10 = 替代方案已足够好（对新产品是坏事）
+    cost_to_user: low | medium | high
+    satisfaction: 1-10
+    rationale: "替代方案分析"
+  buyer_mapping:
+    user / beneficiary / buyer / champion: "角色描述"
+    buyer_exists_score: 1-10
+  persistence:
+    root_cause_type: structural_permanent | platform_bug | regulatory | unknown
+    owner: incumbent | platform | market | none
+    score: 1-10
+    rationale: "痛点是否持久"
+  economic_impact:
+    roi_score: 1-10
+    time_loss / revenue_at_risk / cashflow_impact: none | low | medium | high
+    quantification_notes: "量化说明"
+  competition_score: 1-10       # 10 = 竞争极度激烈
+opportunity_score:              # 由 build_opportunity.py 自动计算，勿手写
+  total: 1440
+  tier: high | medium | low | watch
+  formula: "Pain × Frequency × ROI × SwitchingWill × Buyer × Persistence ÷ Competition ÷ WorkaroundQuality"
 ```
+
+`validate` 用于“痛点强但证据结构还不足以直接 build”的机会。单一来源/单一产品主导的结论，应通过 `confidence_basis` 和 `evidence_ledger` 明确标注证据边界。
+
+**Opportunity Score 分级**：high ≥ 2000 · medium ≥ 500 · low ≥ 100 · watch < 100。`recommendation` 应与 tier 大致对齐（helper 会 WARN 不一致）。
 
 ---
 

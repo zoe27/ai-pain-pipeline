@@ -15,7 +15,16 @@ description: 对 stage 1 (pain-radar) 产出的痛点用 ICE 框架评分，识�
 |------|------|------|------|
 | `pipeline_id` | 是 | — | 必须指定 stage 1 已跑过的 pipeline |
 
-读 `runs/{pipeline_id}/1_pain_points.json`。可选读 `domain_context.json`（ICE 侧重）与 `_raw/radar_signals.json`（`multi_post_themes` 可支撑 confidence）。
+读 `runs/{pipeline_id}/1_pain_points.json`。可选读 `domain_context.json`（ICE 侧重）与 `_raw/radar_signals.json`（`multi_post_themes` 可支撑 confidence）、`_raw/pain_clusters.json`（V2 聚类 + 商业预筛）。
+
+## Pain clusters（V2 Phase 2b）
+
+`build_pain_batch.py` 会自动写 `_raw/pain_clusters.json`，按 **主题@产品** 聚类。`build_scored_batch.py` 会把 `cluster_size`、`commercial_hints` 写入 `market_signals`，并对 **单产品回声室**（size≥3、单来源）自动降低 confidence。
+
+评分时注意：
+- 同一 cluster 多条 ≠ 多个独立市场验证；引用 cluster 时说明是「同主题重复」还是「跨来源验证」
+- `commercial_hints.persistence_hint=platform_bug` → red_flags 应提「平台可能修复」
+- `commercial_hints.switch_intent_ratio` 低 → Impact 高也不代表迁移意愿高
 
 ## 输出
 
@@ -118,8 +127,8 @@ python3 helpers/build_scored_batch.py {pipeline_id}
 
 Helper 自动做：
 - 读 stage 1 输出，按 `id` 关联 judgments（缺判断 → 报错列出哪些 pain_point 没打分）
-- 读 `domain_context.json` 应用 `ice_priority`；enrich `market_signals`（Trends / 48h 评论 / radar 主题）
-- 自动算 `total = impact × confidence × ease`（confidence 可被外部信号 +1）
+- 读 `domain_context.json` 应用 `ice_priority`；enrich `market_signals`（Trends / 48h 评论 / radar 主题 / pain_clusters）
+- 自动算 `total = impact × confidence × ease`（confidence 可被外部信号 +1，单产品聚类回声室会 -1~-2）
 - 严格 jsonschema 校验
 - 写 `runs/{pid}/2_scored_pain_points.json`
 

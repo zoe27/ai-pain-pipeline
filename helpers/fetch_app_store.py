@@ -112,6 +112,20 @@ def resolve_app_ids(cfg: dict) -> list[str]:
     return out
 
 
+def _normalize_feed_entries(feed: object) -> list[dict]:
+    """Apple RSS returns a single review as dict; iterating that dict yields key strings."""
+    if not isinstance(feed, dict):
+        return []
+    raw = feed.get("entry")
+    if not raw:
+        return []
+    if isinstance(raw, dict):
+        return [raw]
+    if isinstance(raw, list):
+        return [e for e in raw if isinstance(e, dict)]
+    return []
+
+
 def extract_review(entry: dict, *, app_id: str, app_name: str) -> dict | None:
     if "im:rating" not in entry:
         return None
@@ -155,7 +169,7 @@ def fetch_reviews_for_app(app_id: str, app_name: str, *, max_pages: int) -> list
         except Exception as e:
             print(f"WARN app_store rss {app_id} page={page}: {e}", file=sys.stderr)
             break
-        entries = payload.get("feed", {}).get("entry") or []
+        entries = _normalize_feed_entries(payload.get("feed"))
         if not entries:
             break
         for entry in entries:
@@ -189,9 +203,13 @@ def collect(config: dict, raw_dir: pathlib.Path) -> list[dict]:
 
     for app_id in app_ids:
         app_name = lookup_app_name(app_id)
-        reviews = fetch_reviews_for_app(
-            app_id, app_name, max_pages=cfg["max_pages"]
-        )
+        try:
+            reviews = fetch_reviews_for_app(
+                app_id, app_name, max_pages=cfg["max_pages"]
+            )
+        except Exception as e:
+            print(f"WARN app_store reviews {app_id} ({app_name}): {e}", file=sys.stderr)
+            continue
         app_payloads[app_id] = reviews
         all_reviews.extend(reviews)
         if reviews:

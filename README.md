@@ -109,7 +109,8 @@ PRD → TechSpec → …   （Stage 4–9 待实现）
 |------|------|
 | 机会包 | 用户画像、竞品、TAM/SAM/SOM、产品假设 |
 | 多痛点合并 | 同主题多条 ICE 高分项合成一个 Opportunity |
-| 建议 | `build` / `skip` / `partner` + confidence 等级 |
+| 建议 | `build` / `validate` / `skip` / `partner` + confidence 等级 |
+| 证据审计 | `confidence_basis`、`evidence_ledger`、`unsupported_assumptions`、`validation_required` 区分事实与假设 |
 | 输出 | `3_opportunity.json` |
 
 ---
