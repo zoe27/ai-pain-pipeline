@@ -36,6 +36,7 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
   - 拼装 → `helpers/build_*.py`（无 hardcode 数据）
 - **每个 helper 单参数 `pipeline_id`**，路径都从 pid 推导
 - **严格校验**：每个 helper 跑完都用对应的 jsonschema 验一遍，挂了立刻报错
+- **证据可审计**：Stage 3 支持 `evidence_ledger` 和 `confidence_basis`，digest 会展示证据边界与待验证假设
 - **幂等**：可以重复跑，不会损坏前一阶段输出（但当前会覆盖自己的输出）
 
 ## 预期未来加的

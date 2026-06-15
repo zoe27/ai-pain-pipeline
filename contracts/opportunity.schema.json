@@ -80,7 +80,7 @@
     },
     "recommendation": {
       "type": "string",
-      "enum": ["build", "skip", "partner"]
+      "enum": ["build", "skip", "partner", "validate"]
     },
     "confidence": {
       "type": "string",
@@ -90,9 +90,132 @@
       "type": "string",
       "minLength": 50,
       "maxLength": 2000
+    },
+    "confidence_basis": {
+      "$ref": "#/definitions/ConfidenceBasis"
+    },
+    "evidence_ledger": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": { "$ref": "#/definitions/EvidenceEntry" }
+    },
+    "unsupported_assumptions": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 200
+      }
+    },
+    "validation_required": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": { "$ref": "#/definitions/ValidationItem" }
     }
   },
   "definitions": {
+    "ConfidenceBasis": {
+      "type": "object",
+      "required": ["source_count", "product_count", "cross_run", "rationale"],
+      "additionalProperties": false,
+      "properties": {
+        "source_count": { "type": "integer", "minimum": 1 },
+        "product_count": { "type": "integer", "minimum": 1 },
+        "cross_run": { "type": "boolean" },
+        "switch_intent_present": { "type": "boolean" },
+        "wtp_signal_present": { "type": "boolean" },
+        "rationale": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 500
+        }
+      }
+    },
+    "EvidenceEntry": {
+      "type": "object",
+      "required": ["claim", "evidence", "strength"],
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/definitions/EvidenceItem" }
+        },
+        "strength": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "EvidenceItem": {
+      "type": "object",
+      "required": ["source", "quote", "pain_point_id"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["reddit", "hackernews", "github_issues", "producthunt", "app_store"]
+        },
+        "product": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 300
+        },
+        "pain_point_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_url": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ValidationItem": {
+      "type": "object",
+      "required": ["experiment", "success_criterion", "priority"],
+      "additionalProperties": false,
+      "properties": {
+        "experiment": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "success_criterion": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        }
+      }
+    },
     "Persona": {
       "type": "object",
       "required": ["name", "pain_intensity", "willingness_to_pay", "persona_size_estimate", "quotes"],

@@ -21,6 +21,16 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMA_PATH = ROOT / "contracts" / "opportunity.schema.json"
 
 
+def _validate_evidence_ids(judgment: dict, scored_ids: set[str]) -> None:
+    for entry in judgment.get("evidence_ledger") or []:
+        for item in entry.get("evidence") or []:
+            evidence_id = item.get("pain_point_id")
+            if evidence_id not in scored_ids:
+                raise ValueError(
+                    f"evidence pain_point_id {evidence_id!r} not found in stage 2 output"
+                )
+
+
 def build(pipeline_id: str) -> dict:
     run_dir = ROOT / "runs" / pipeline_id
     scored_path = run_dir / "2_scored_pain_points.json"
@@ -42,6 +52,7 @@ def build(pipeline_id: str) -> dict:
     for rid in judgment.get("related_pain_point_ids") or []:
         if rid not in scored_ids:
             raise ValueError(f"related_pain_point_id {rid!r} not found in stage 2 output")
+    _validate_evidence_ids(judgment, scored_ids)
 
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     opportunity = {
@@ -51,13 +62,15 @@ def build(pipeline_id: str) -> dict:
         **judgment,
     }
 
-    out_path.write_text(json.dumps(opportunity, indent=2, ensure_ascii=False) + "\n")
-    print(f"✓ wrote {out_path.relative_to(ROOT)} ({out_path.stat().st_size} bytes)")
-
     import jsonschema
 
     jsonschema.validate(opportunity, json.loads(SCHEMA_PATH.read_text()))
     print("✓ jsonschema validation passed")
+    if opportunity["recommendation"] == "validate" and opportunity["confidence"] == "high":
+        print("WARN validate recommendation usually should not use high confidence")
+
+    out_path.write_text(json.dumps(opportunity, indent=2, ensure_ascii=False) + "\n")
+    print(f"✓ wrote {out_path.relative_to(ROOT)} ({out_path.stat().st_size} bytes)")
     print(f"  recommendation: {opportunity['recommendation']} (confidence: {opportunity['confidence']})")
 
     return opportunity

@@ -85,9 +85,33 @@ market_size:
   tam_usd: 50000000
   sam_usd: 5000000
   som_usd: 500000
-recommendation: build | skip | partner
+recommendation: build | validate | skip | partner
 confidence: high | medium | low
+confidence_basis:
+  source_count: 2
+  product_count: 2
+  cross_run: true
+  switch_intent_present: true
+  wtp_signal_present: true
+  rationale: "为什么是这个置信度"
+evidence_ledger:
+  - claim: "核心结论"
+    strength: high | medium | low
+    evidence:
+      - source: app_store
+        product: "QuickBooks"
+        pain_point_id: uuid
+        quote: "真实用户原话"
+    assumptions: ["仍需验证的假设"]
+unsupported_assumptions:
+  - "本轮数据没有直接证明的关键假设"
+validation_required:
+  - experiment: "下一步验证实验"
+    success_criterion: "成功标准"
+    priority: high | medium | low
 ```
+
+`validate` 用于“痛点强但证据结构还不足以直接 build”的机会。单一来源/单一产品主导的结论，应通过 `confidence_basis` 和 `evidence_ledger` 明确标注证据边界。
 
 ---
 

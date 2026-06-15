@@ -183,7 +183,7 @@ def build_stage3(pipeline_id: str) -> dict:
         if not weak:
             raise ValueError(f"weaknesses_zh empty for {s.get('name_zh')}")
 
-    rec_map = {"build": "建议做", "skip": "建议跳过", "partner": "建议合作"}
+    rec_map = {"build": "建议做", "skip": "建议跳过", "partner": "建议合作", "validate": "建议验证"}
     conf_map = {"high": "高", "medium": "中", "low": "低"}
 
     batch = {
@@ -201,6 +201,27 @@ def build_stage3(pipeline_id: str) -> dict:
         "product_hypothesis_zh": j["product_hypothesis_zh"].strip(),
         "research_notes_zh": j["research_notes_zh"].strip(),
     }
+    if "confidence_basis_rationale_zh" in j:
+        _len_ok(j["confidence_basis_rationale_zh"].strip(), 20, 500, "confidence_basis_rationale_zh")
+        batch["confidence_basis_rationale_zh"] = j["confidence_basis_rationale_zh"].strip()
+    if "unsupported_assumptions_zh" in j:
+        assumptions = [a.strip() for a in j["unsupported_assumptions_zh"]]
+        for a in assumptions:
+            _len_ok(a, 10, 200, "unsupported_assumptions_zh")
+        batch["unsupported_assumptions_zh"] = assumptions
+    if "validation_required" in j:
+        validations = j["validation_required"]
+        for v in validations:
+            _len_ok(v["experiment_zh"].strip(), 10, 200, "experiment_zh")
+            _len_ok(v["success_criterion_zh"].strip(), 10, 200, "success_criterion_zh")
+        batch["validation_required"] = validations
+    if "evidence_ledger" in j:
+        evidence_ledger = j["evidence_ledger"]
+        for entry in evidence_ledger:
+            _len_ok(entry["claim_zh"].strip(), 10, 200, "claim_zh")
+            for assumption in entry.get("assumptions_zh") or []:
+                _len_ok(assumption.strip(), 10, 200, "assumptions_zh")
+        batch["evidence_ledger"] = evidence_ledger
     out_path.write_text(json.dumps(batch, indent=2, ensure_ascii=False) + "\n")
     print(f"✓ wrote {out_path.relative_to(ROOT)}")
     return batch

@@ -27,6 +27,7 @@ RECOMMENDATION_ZH = {
     "build": "建议做",
     "skip": "建议跳过",
     "partner": "建议合作",
+    "validate": "建议验证",
 }
 
 CONFIDENCE_ZH = {"high": "高", "medium": "中", "low": "低"}
@@ -259,6 +260,110 @@ def digest_stage2_zh(data: dict, i18n: dict) -> str:
     return "\n".join(out)
 
 
+def _append_stage3_audit_sections(out: list[str], data: dict) -> None:
+    basis = data.get("confidence_basis")
+    if basis:
+        out.append("## Confidence Basis\n")
+        out.append(
+            f"- Sources: {basis['source_count']} · Products: {basis['product_count']} · "
+            f"Cross-run: {basis['cross_run']}"
+        )
+        if "switch_intent_present" in basis:
+            out.append(f"- Switch intent present: {basis['switch_intent_present']}")
+        if "wtp_signal_present" in basis:
+            out.append(f"- WTP signal present: {basis['wtp_signal_present']}")
+        out.append(f"- Rationale: {basis['rationale']}\n")
+
+    ledger = data.get("evidence_ledger") or []
+    if ledger:
+        out.append("## Evidence Ledger\n")
+        for entry in ledger:
+            out.append(f"### [{entry['strength']}] {entry['claim']}\n")
+            for item in entry["evidence"]:
+                product = f" · {item['product']}" if item.get("product") else ""
+                out.append(f"- `{item['source']}`{product}: \"{item['quote']}\"")
+            assumptions = entry.get("assumptions") or []
+            if assumptions:
+                out.append("")
+                out.append("Assumptions:")
+                for assumption in assumptions:
+                    out.append(f"- {assumption}")
+            out.append("")
+
+    assumptions = data.get("unsupported_assumptions") or []
+    if assumptions:
+        out.append("## Unsupported Assumptions\n")
+        for assumption in assumptions:
+            out.append(f"- {assumption}")
+        out.append("")
+
+    validations = data.get("validation_required") or []
+    if validations:
+        out.append("## Validation Required\n")
+        for i, item in enumerate(validations, 1):
+            out.append(
+                f"{i}. **[{item['priority']}] {item['experiment']}** — "
+                f"{item['success_criterion']}"
+            )
+        out.append("")
+
+
+def _append_stage3_audit_sections_zh(out: list[str], data: dict, i18n: dict) -> None:
+    basis = data.get("confidence_basis")
+    if basis:
+        rationale = i18n.get("confidence_basis_rationale_zh") or basis["rationale"]
+        out.append("## 置信度依据\n")
+        out.append(
+            f"- 来源数：{basis['source_count']} · 产品数：{basis['product_count']} · "
+            f"跨 run：{basis['cross_run']}"
+        )
+        if "switch_intent_present" in basis:
+            out.append(f"- 有明确切换意愿：{basis['switch_intent_present']}")
+        if "wtp_signal_present" in basis:
+            out.append(f"- 有付费/损失信号：{basis['wtp_signal_present']}")
+        out.append(f"- 依据：{rationale}\n")
+
+    ledger = data.get("evidence_ledger") or []
+    ledger_zh = i18n.get("evidence_ledger") or []
+    if ledger:
+        out.append("## 证据账本\n")
+        strength_zh = {"high": "强", "medium": "中", "low": "弱"}
+        for idx, entry in enumerate(ledger):
+            zh = ledger_zh[idx] if idx < len(ledger_zh) else {}
+            claim = zh.get("claim_zh") or entry["claim"]
+            out.append(f"### [{strength_zh.get(entry['strength'], entry['strength'])}] {claim}\n")
+            for item in entry["evidence"]:
+                product = f" · {item['product']}" if item.get("product") else ""
+                out.append(f"- `{item['source']}`{product}: 「{item['quote']}」")
+            assumptions = zh.get("assumptions_zh") or entry.get("assumptions") or []
+            if assumptions:
+                out.append("")
+                out.append("仍需假设：")
+                for assumption in assumptions:
+                    out.append(f"- {assumption}")
+            out.append("")
+
+    assumptions = i18n.get("unsupported_assumptions_zh") or data.get("unsupported_assumptions") or []
+    if assumptions:
+        out.append("## 尚未验证的假设\n")
+        for assumption in assumptions:
+            out.append(f"- {assumption}")
+        out.append("")
+
+    validations = data.get("validation_required") or []
+    validations_zh = i18n.get("validation_required") or []
+    if validations:
+        out.append("## 下一步验证\n")
+        priority_zh = {"high": "高", "medium": "中", "low": "低"}
+        for idx, item in enumerate(validations, 1):
+            zh = validations_zh[idx - 1] if idx - 1 < len(validations_zh) else {}
+            experiment = zh.get("experiment_zh") or item["experiment"]
+            criterion = zh.get("success_criterion_zh") or item["success_criterion"]
+            priority = priority_zh.get(item["priority"], item["priority"])
+            out.append(f"{idx}. **[{priority}] {experiment}** — {criterion}")
+        out.append("")
+
+
 def digest_stage3(data: dict) -> str:
     out = []
     out.append("# Stage 3 — User Research 摘要\n")
@@ -298,6 +403,8 @@ def digest_stage3(data: dict) -> str:
 
     out.append("## 产品假设\n")
     out.append(data["product_hypothesis"] + "\n")
+
+    _append_stage3_audit_sections(out, data)
 
     out.append("## 研究结论\n")
     out.append(data["research_notes"])
@@ -342,6 +449,8 @@ def digest_stage3_zh(data: dict, i18n: dict) -> str:
 
     out.append("## 产品假设\n")
     out.append(i18n["product_hypothesis_zh"] + "\n")
+
+    _append_stage3_audit_sections_zh(out, data, i18n)
 
     out.append("## 研究结论\n")
     out.append(i18n["research_notes_zh"])
