@@ -130,6 +130,26 @@
                       "enum": ["platform_bug", "structural", "unknown"]
                     }
                   }
+                },
+                "external_signals": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "switch_intent_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+                    "workaround_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+                    "switch_phrases": {
+                      "type": "array",
+                      "maxItems": 5,
+                      "items": { "type": "string" }
+                    },
+                    "github_issue_state": { "type": "string", "enum": ["open", "closed"] },
+                    "persistence_prefill_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+                    "competitor_mentions": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": { "type": "string" }
+                    }
+                  }
                 }
               }
             }

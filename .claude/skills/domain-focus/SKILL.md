@@ -63,8 +63,9 @@ python3 helpers/merge_radar_config.py {pipeline_id} --base configs/radar.example
    ```bash
    python3 helpers/fetch_radar.py {pipeline_id} --config runs/{pipeline_id}/radar.config.yaml
    ```
-2. **Stage 2**：`build_scored_batch.py` 自动读 `domain_context.json` 的 `ice_priority` 缩放 ICE；`market_signals_enrich.py` 填 Trends / 48h 评论
-3. **Stage 1 后**：`_raw/radar_signals.json` 的 `multi_post_themes` 与上述信号一起提升 confidence
+2. **Stage 2**：`build_scored_batch.py` 自动读 `domain_context.json` 的 `ice_priority`；enrich `market_signals`（Trends / 48h 评论 / pain_clusters / **external_signals**）；写 `commercial_prefill.json`
+3. **Stage 3**：读 `commercial_prefill.json` + `external_signals.json` 填写 `commercial_assessment`
+4. **Stage 1 后**：`_raw/radar_signals.json` 的 `multi_post_themes` 与上述信号一起提升 confidence
 
 ## 可选
 

@@ -118,6 +118,21 @@ def build(pipeline_id: str) -> dict:
     if commercial:
         opportunity["opportunity_score"] = compute_opportunity_score(commercial)
 
+    prefill_path = run_dir / "_raw" / "commercial_prefill.json"
+    if prefill_path.is_file():
+        prefill = json.loads(prefill_path.read_text())
+        opportunity["external_signals_summary"] = {
+            "mode": prefill.get("data_sources", {}).get("mode", "broad"),
+            "cluster_id": prefill.get("cluster_id"),
+            "switch_phrases": prefill.get("switch_phrases") or [],
+            "workaround_phrases": prefill.get("workaround_phrases") or [],
+            "competitor_mentions": prefill.get("competitor_mentions") or [],
+            "pricing_snippets": prefill.get("pricing_snippets") or [],
+            "persistence_prefill": prefill.get("persistence_prefill"),
+            "suggested_scores": prefill.get("suggested_scores"),
+            "agent_notes": prefill.get("agent_notes", "")[:500],
+        }
+
     import jsonschema
 
     jsonschema.validate(opportunity, json.loads(SCHEMA_PATH.read_text()))

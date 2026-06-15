@@ -96,6 +96,8 @@ def extract_issue(issue: dict, repo: str) -> dict | None:
         "url": issue.get("html_url"),
         "created_at": issue.get("created_at"),
         "updated_at": issue.get("updated_at"),
+        "issue_state": issue.get("state") or "open",
+        "closed_at": issue.get("closed_at"),
     }
 
 

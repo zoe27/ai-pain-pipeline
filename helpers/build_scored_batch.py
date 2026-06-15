@@ -85,6 +85,11 @@ def build(pipeline_id: str) -> dict:
             for pid in cluster.get("pain_point_ids") or []:
                 cluster_by_id[pid] = cluster
 
+    ext_by_id: dict[str, dict] = {}
+    ext_path = run_dir / "_raw" / "external_signals.json"
+    if ext_path.exists():
+        ext_by_id = json.loads(ext_path.read_text()).get("by_pain_point_id") or {}
+
     scored = []
     for pp in inp["pain_points"]:
         j = judg_by_id[pp["id"]]
@@ -141,6 +146,24 @@ def build(pipeline_id: str) -> dict:
                 "commercial_hints": cluster["commercial_hints"],
             }
 
+        ext = ext_by_id.get(pp["id"])
+        if ext:
+            ext_out: dict = {
+                "switch_intent_score": ext["switch_intent"]["score"],
+                "workaround_score": ext["workaround"]["score"],
+            }
+            if ext.get("switch_intent", {}).get("phrases"):
+                ext_out["switch_phrases"] = ext["switch_intent"]["phrases"][:5]
+            if ext.get("github"):
+                gh = ext["github"]
+                ext_out["github_issue_state"] = gh.get("state")
+                pref = gh.get("persistence_prefill") or {}
+                if pref.get("score"):
+                    ext_out["persistence_prefill_score"] = pref["score"]
+            if ext.get("competitor_mentions"):
+                ext_out["competitor_mentions"] = ext["competitor_mentions"]
+            market_signals = {**(market_signals or {}), "external_signals": ext_out}
+
         c = apply_confidence_boosts(c, market_signals)
         c = apply_cluster_dampening(c, market_signals)
 
@@ -175,6 +198,13 @@ def build(pipeline_id: str) -> dict:
 
     enriched = sum(1 for s in scored if s.get("market_signals"))
     print(f"✓ market_signals enriched: {enriched}/{len(scored)}")
+
+    try:
+        from build_commercial_prefill import build as build_prefill
+
+        build_prefill(pipeline_id)
+    except Exception as e:
+        print(f"WARN commercial_prefill: {e}", file=sys.stderr)
 
     return batch
 

@@ -194,6 +194,11 @@ def apply_confidence_boosts(
     themes = market_signals.get("theme_mentions") or 0
     if themes >= 2:
         c += 1
+    ext = market_signals.get("external_signals") or {}
+    if ext.get("switch_intent_score", 0) >= 7:
+        c += 1
+    if ext.get("persistence_prefill_score", 0) <= 4:
+        c = max(1, c - 1)
     return min(10, c)
 
 

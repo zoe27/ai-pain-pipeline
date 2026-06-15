@@ -408,6 +408,65 @@ def _append_commercial_sections_zh(out: list[str], data: dict, i18n: dict) -> No
     out.append(f"- **推动者**：{bm_zh.get('champion_zh') or bm['champion']}\n")
 
 
+def _append_external_signals_sections(out: list[str], data: dict) -> None:
+    summary = data.get("external_signals_summary")
+    if not summary:
+        return
+    out.append("## External Signals (Phase 2c)\n")
+    mode = summary.get("mode", "broad")
+    out.append(f"**Mode**: {mode}" + (f" · cluster `{summary['cluster_id']}`" if summary.get("cluster_id") else "") + "\n")
+    if summary.get("switch_phrases"):
+        out.append("**Switch intent phrases**: " + " · ".join(f"`{p}`" for p in summary["switch_phrases"][:6]) + "\n")
+    if summary.get("workaround_phrases"):
+        out.append("**Workaround phrases**: " + " · ".join(f"`{p}`" for p in summary["workaround_phrases"][:6]) + "\n")
+    if summary.get("competitor_mentions"):
+        out.append("**Competitor mentions**: " + ", ".join(summary["competitor_mentions"]) + "\n")
+    if summary.get("pricing_snippets"):
+        out.append("**Pricing in corpus**: " + ", ".join(summary["pricing_snippets"][:5]) + "\n")
+    pref = summary.get("persistence_prefill") or {}
+    if pref.get("score"):
+        out.append(
+            f"**GitHub persistence prefill**: {pref['score']}/10 — "
+            f"{pref.get('root_cause_type', '?')} / {pref.get('rationale', '')}\n"
+        )
+    suggested = summary.get("suggested_scores") or {}
+    if suggested:
+        out.append(
+            f"**Suggested scores (heuristic)**: switching={suggested.get('switching_willingness')} "
+            f"workaround÷={suggested.get('workaround_quality_score')} "
+            f"persistence={suggested.get('persistence_score')}\n"
+        )
+    out.append("")
+
+
+def _append_external_signals_sections_zh(out: list[str], data: dict) -> None:
+    summary = data.get("external_signals_summary")
+    if not summary:
+        return
+    out.append("## 外部信号（Phase 2c）\n")
+    mode_zh = "定向 focus" if summary.get("mode") == "focus" else "全市场 broad"
+    out.append(f"**模式**：{mode_zh}" + (f" · 聚类 `{summary['cluster_id']}`" if summary.get("cluster_id") else "") + "\n")
+    if summary.get("switch_phrases"):
+        out.append("**切换意愿短语**：" + " · ".join(f"`{p}`" for p in summary["switch_phrases"][:6]) + "\n")
+    if summary.get("workaround_phrases"):
+        out.append("**变通方案短语**：" + " · ".join(f"`{p}`" for p in summary["workaround_phrases"][:6]) + "\n")
+    if summary.get("competitor_mentions"):
+        out.append("**竞品提及**：" + ", ".join(summary["competitor_mentions"]) + "\n")
+    if summary.get("pricing_snippets"):
+        out.append("**语料中的定价**：" + ", ".join(summary["pricing_snippets"][:5]) + "\n")
+    pref = summary.get("persistence_prefill") or {}
+    if pref.get("score"):
+        out.append(f"**GitHub 持续性预填**：{pref['score']}/10 — {pref.get('rationale', '')}\n")
+    suggested = summary.get("suggested_scores") or {}
+    if suggested:
+        out.append(
+            f"**建议分数（启发式）**：迁移意愿={suggested.get('switching_willingness')} "
+            f"替代方案÷={suggested.get('workaround_quality_score')} "
+            f"持续性={suggested.get('persistence_score')}\n"
+        )
+    out.append("")
+
+
 def _append_stage3_audit_sections(out: list[str], data: dict) -> None:
     basis = data.get("confidence_basis")
     if basis:
@@ -553,6 +612,7 @@ def digest_stage3(data: dict) -> str:
     out.append(data["product_hypothesis"] + "\n")
 
     _append_commercial_sections(out, data)
+    _append_external_signals_sections(out, data)
     _append_stage3_audit_sections(out, data)
 
     out.append("## 研究结论\n")
@@ -600,6 +660,7 @@ def digest_stage3_zh(data: dict, i18n: dict) -> str:
     out.append(i18n["product_hypothesis_zh"] + "\n")
 
     _append_commercial_sections_zh(out, data, i18n)
+    _append_external_signals_sections_zh(out, data)
     _append_stage3_audit_sections_zh(out, data, i18n)
 
     out.append("## 研究结论\n")
