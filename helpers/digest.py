@@ -164,6 +164,26 @@ def digest_stage2(data: dict) -> str:
     out.append(f"- 🟡 **观察名单** (100 ≤ total < 200): {len(mid)} 条")
     out.append(f"- ⚪ **基本可丢弃** (total < 100): {len(low)} 条\n")
 
+    echo = []
+    seen_clusters: set[str] = set()
+    for s in scored:
+        ms = s.get("market_signals") or {}
+        cid = ms.get("cluster_id")
+        if not cid or cid in seen_clusters:
+            continue
+        size = ms.get("cluster_size") or 1
+        if size >= 2:
+            seen_clusters.add(cid)
+            hints = ms.get("commercial_hints") or {}
+            echo.append((cid, size, hints.get("persistence_hint", "?"), hints.get("single_source_echo", False)))
+    if echo:
+        out.append("## Pain clusters (V2 pre-screen)\n")
+        out.append("| cluster | size | persistence hint | single-source echo |")
+        out.append("|---------|-----:|------------------|--------------------|")
+        for cid, size, ph, sse in sorted(echo, key=lambda x: -x[1]):
+            out.append(f"| `{cid}` | {size} | {ph} | {sse} |")
+        out.append("")
+
     out.append(f"## 🟢 值得认真考虑 ({len(high)} 条)\n")
     for i, s in enumerate(high, 1):
         ice = s["ice_score"]

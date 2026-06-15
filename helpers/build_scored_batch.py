@@ -37,6 +37,7 @@ def build(pipeline_id: str) -> dict:
         raise FileNotFoundError(f"missing judgments: {judg_path}")
 
     from market_signals_enrich import (
+        apply_cluster_dampening,
         apply_confidence_boosts,
         apply_ice_priority,
         enrich_for_pain_point,
@@ -75,6 +76,14 @@ def build(pipeline_id: str) -> dict:
                 sig_by_title[row["title"]] = row
 
     hn_ids = load_top50_object_ids(run_dir)
+
+    cluster_by_id: dict[str, dict] = {}
+    clusters_path = run_dir / "_raw" / "pain_clusters.json"
+    if clusters_path.exists():
+        cluster_payload = json.loads(clusters_path.read_text())
+        for cluster in cluster_payload.get("clusters") or []:
+            for pid in cluster.get("pain_point_ids") or []:
+                cluster_by_id[pid] = cluster
 
     scored = []
     for pp in inp["pain_points"]:
@@ -122,7 +131,18 @@ def build(pipeline_id: str) -> dict:
         if extra or market_signals:
             market_signals = {**(market_signals or {}), **extra}
 
+        cluster = cluster_by_id.get(pp["id"])
+        if cluster:
+            market_signals = {
+                **(market_signals or {}),
+                "cluster_id": cluster["cluster_id"],
+                "cluster_size": cluster["size"],
+                "cluster_source_count": cluster["source_count"],
+                "commercial_hints": cluster["commercial_hints"],
+            }
+
         c = apply_confidence_boosts(c, market_signals)
+        c = apply_cluster_dampening(c, market_signals)
 
         scored.append({
             "pain_point_id": pp["id"],

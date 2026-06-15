@@ -100,6 +100,36 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "HN comments in first 48h after post (Algolia items API)"
+                },
+                "cluster_id": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 80,
+                  "description": "Theme@product cluster from pain_clusters.json"
+                },
+                "cluster_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Pain points in same theme+product cluster"
+                },
+                "cluster_source_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Distinct sources in cluster"
+                },
+                "commercial_hints": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "switch_intent_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "platform_bug_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "workaround_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "single_source_echo": { "type": "boolean" },
+                    "persistence_hint": {
+                      "type": "string",
+                      "enum": ["platform_bug", "structural", "unknown"]
+                    }
+                  }
                 }
               }
             }

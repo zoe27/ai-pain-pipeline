@@ -55,7 +55,7 @@ description: 对 stage 2 高分痛点做用户研究，输出 Opportunity 到 ru
 
 ### 商业判断（V2 commercial_assessment）
 
-Stage 3 必须填写 `commercial_assessment`，回答「值得做吗？」而不只是「用户在抱怨什么？」。
+Stage 3 必须填写 `commercial_assessment`，回答「值得做吗？」而不只是「用户在抱怨什么？」。可先读 `_raw/pain_clusters.json` 的 `commercial_hints` 作为初筛参考。
 
 | 维度 | 字段 | 评分指引 |
 |------|------|----------|

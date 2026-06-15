@@ -101,6 +101,11 @@ def build(pipeline_id: str, source_file: str = "_raw/top50.json") -> dict:
             },
             "extracted_keywords": j["keywords"],
             "extracted_at": now,
+            **(
+                {"source_label": post["source_label"]}
+                if post.get("source_label")
+                else {}
+            ),
         })
 
     batch = {
@@ -117,6 +122,13 @@ def build(pipeline_id: str, source_file: str = "_raw/top50.json") -> dict:
     import jsonschema
     jsonschema.validate(batch, json.loads(SCHEMA_PATH.read_text()))
     print("✓ jsonschema validation passed")
+
+    from compute_pain_clusters import run as compute_clusters
+
+    try:
+        compute_clusters(pipeline_id)
+    except Exception as e:
+        print(f"WARN pain_clusters: {e}", file=sys.stderr)
 
     return batch
 

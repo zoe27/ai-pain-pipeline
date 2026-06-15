@@ -20,6 +20,7 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
 | `eval_radar_quality.py` | benchmark 对比 v0.4/v0.6 过滤指标（precision/recall/leak） | 优化验证 / CI |
 | `hn_comments.py` | HN Algolia items API → `comment_resonance` | `fetch_hn.py` |
 | `compute_radar_signals.py <pid>` | `top50.json` → `radar_signals.json` 主题聚类 | `fetch_radar.py` |
+| `compute_pain_clusters.py <pid>` | stage 1 痛点按主题@产品聚类 + 商业预筛 hints | `build_pain_batch.py`（自动） |
 | `merge_radar_config.py <pid>` | Stage 0 `domain_context.json` → `runs/{pid}/radar.config.yaml` | `domain-focus` skill |
 | `build_domain_context.py <pid>` | Stage 0 judgments → `domain_context.json` | `domain-focus` skill |
 | `market_signals_enrich.py` | Google Trends 斜率 + HN 48h 评论增速 | `build_scored_batch.py` |
