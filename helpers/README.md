@@ -26,7 +26,7 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
 | `smoke_github_issues.py` | GitHub product_pain 过滤 smoke + JSON 报告 | CI / #10 验证 |
 | `build_pain_batch.py <pid>` | 拼装 stage 1 输出（top50 + judgments → 1_pain_points.json）+ 严格校验 | `pain-radar` skill 步骤 5 |
 | `build_scored_batch.py <pid>` | 拼装 stage 2 输出（pain_points + judgments → 2_scored_pain_points.json）+ 严格校验 | `score-pain` skill 步骤 3 |
-| `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 严格校验 | `user-research` skill 步骤 3 |
+| `build_opportunity.py <pid>` | 拼装 stage 3 输出（judgments → 3_opportunity.json）+ 自动算 `opportunity_score` | `user-research` skill 步骤 3 |
 
 ## 设计约定
 
@@ -37,6 +37,7 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
 - **每个 helper 单参数 `pipeline_id`**，路径都从 pid 推导
 - **严格校验**：每个 helper 跑完都用对应的 jsonschema 验一遍，挂了立刻报错
 - **证据可审计**：Stage 3 支持 `evidence_ledger` 和 `confidence_basis`，digest 会展示证据边界与待验证假设
+- **商业判断 V2**：Stage 3 可选 `commercial_assessment`（迁移成本、替代方案、付费主体、持续性、ROI）；`build_opportunity.py` 自动计算 `opportunity_score` 并 WARN recommendation 与 tier 不一致
 - **幂等**：可以重复跑，不会损坏前一阶段输出（但当前会覆盖自己的输出）
 
 ## 预期未来加的

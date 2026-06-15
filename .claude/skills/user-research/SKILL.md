@@ -51,6 +51,33 @@ description: 对 stage 2 高分痛点做用户研究，输出 Opportunity 到 ru
 | `evidence_ledger` | 证据账本：每个关键 claim 必须引用真实 pain_point_id 和原话 |
 | `unsupported_assumptions` | 尚未被本轮数据证明的假设 |
 | `validation_required` | 下一步验证实验和成功标准 |
+| `commercial_assessment` | V2 商业判断：迁移成本、替代方案、付费主体、持续性、ROI（见下方） |
+
+### 商业判断（V2 commercial_assessment）
+
+Stage 3 必须填写 `commercial_assessment`，回答「值得做吗？」而不只是「用户在抱怨什么？」。
+
+| 维度 | 字段 | 评分指引 |
+|------|------|----------|
+| 痛点强度 | `pain_score` | 来自 persona pain_intensity 和证据强度 |
+| 频率 | `frequency_score` | 每天/每周/每月触发 |
+| 迁移意愿 | `switching_willingness` | 10=主动找替代，1=被锁死 |
+| 迁移成本 | `switching_cost.score` + 子维度 | 10=极难迁移（记账、邮件） |
+| 替代方案 | `workaround_analysis.quality_score` | 10=现有方案已够用（对新产品是坏事） |
+| 付费主体 | `buyer_mapping.buyer_exists_score` | 10=明确独立预算，1=用户≠付款人 |
+| 持续性 | `persistence.score` | 10=结构性永久，4=平台 bug 可能被修复 |
+| 经济影响 | `economic_impact.roi_score` | 量化时间/收入/现金流损失 |
+| 竞争 | `competition_score` | 10=红海+强 incumbent |
+
+**Opportunity Score** 由 `build_opportunity.py` 自动计算：
+
+```
+Pain × Frequency × ROI × SwitchingWill × Buyer × Persistence ÷ Competition ÷ WorkaroundQuality
+```
+
+分级：high ≥ 2000 · medium ≥ 500 · low ≥ 100 · watch < 100。
+
+`recommendation` 应与 tier 对齐：`high→build`，`medium→build|validate`，`low→validate|partner`，`watch→validate|skip|partner`。
 
 ### 置信度规则
 
@@ -143,7 +170,20 @@ python3 helpers/build_opportunity.py {pipeline_id}
     }
   ],
   "product_hypothesis_zh": "MVP：Gmail 插件识别 LLM 模板推销 + 假职位 URL 检测 + 每周高信号 digest……",
-  "research_notes_zh": "合并 ICE #1 与 #2……护城河弱，但 LLM outreach 检测可作为 1 周 MVP 切入点。"
+  "research_notes_zh": "合并 ICE #1 与 #2……护城河弱，但 LLM outreach 检测可作为 1 周 MVP 切入点。",
+  "commercial_assessment": {
+    "switching_cost": { "rationale_zh": "迁移成本中文说明" },
+    "workaround_analysis": {
+      "current_workarounds_zh": ["用户现有替代方案"],
+      "rationale_zh": "替代方案分析"
+    },
+    "buyer_mapping": {
+      "user_zh": "使用者", "beneficiary_zh": "受益者",
+      "buyer_zh": "付款人", "champion_zh": "推动者"
+    },
+    "persistence": { "rationale_zh": "持续性分析" },
+    "economic_impact": { "quantification_notes_zh": "经济影响量化" }
+  }
 }
 ```
 

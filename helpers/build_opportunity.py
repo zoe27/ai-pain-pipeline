@@ -20,6 +20,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMA_PATH = ROOT / "contracts" / "opportunity.schema.json"
 
+FORMULA = (
+    "Pain × Frequency × ROI × SwitchingWill × Buyer × Persistence "
+    "÷ Competition ÷ WorkaroundQuality"
+)
+
 
 def _validate_evidence_ids(judgment: dict, scored_ids: set[str]) -> None:
     for entry in judgment.get("evidence_ledger") or []:
@@ -29,6 +34,53 @@ def _validate_evidence_ids(judgment: dict, scored_ids: set[str]) -> None:
                 raise ValueError(
                     f"evidence pain_point_id {evidence_id!r} not found in stage 2 output"
                 )
+
+
+def compute_opportunity_score(commercial: dict) -> dict:
+    """V2 commercial score: multiplicative model with tier classification."""
+    pain = commercial["pain_score"]
+    frequency = commercial["frequency_score"]
+    roi = commercial["economic_impact"]["roi_score"]
+    switching_will = commercial["switching_willingness"]
+    buyer = commercial["buyer_mapping"]["buyer_exists_score"]
+    persistence = commercial["persistence"]["score"]
+    competition = max(commercial["competition_score"], 1)
+    workaround = max(commercial["workaround_analysis"]["quality_score"], 1)
+
+    numerator = pain * frequency * roi * switching_will * buyer * persistence
+    denominator = competition * workaround
+    total = round(numerator / denominator)
+
+    if total >= 2000:
+        tier = "high"
+    elif total >= 500:
+        tier = "medium"
+    elif total >= 100:
+        tier = "low"
+    else:
+        tier = "watch"
+
+    return {
+        "total": total,
+        "tier": tier,
+        "formula": FORMULA,
+        "components": {"numerator": numerator, "denominator": denominator},
+    }
+
+
+def _warn_score_mismatch(recommendation: str, tier: str) -> None:
+    expected = {
+        "high": {"build"},
+        "medium": {"build", "validate"},
+        "low": {"validate", "partner"},
+        "watch": {"validate", "skip", "partner"},
+    }
+    allowed = expected.get(tier, set())
+    if recommendation not in allowed:
+        print(
+            f"WARN recommendation={recommendation!r} may not align with "
+            f"opportunity_score tier={tier!r}"
+        )
 
 
 def build(pipeline_id: str) -> dict:
@@ -62,16 +114,27 @@ def build(pipeline_id: str) -> dict:
         **judgment,
     }
 
+    commercial = judgment.get("commercial_assessment")
+    if commercial:
+        opportunity["opportunity_score"] = compute_opportunity_score(commercial)
+
     import jsonschema
 
     jsonschema.validate(opportunity, json.loads(SCHEMA_PATH.read_text()))
     print("✓ jsonschema validation passed")
     if opportunity["recommendation"] == "validate" and opportunity["confidence"] == "high":
         print("WARN validate recommendation usually should not use high confidence")
+    if commercial and "opportunity_score" in opportunity:
+        score = opportunity["opportunity_score"]
+        print(f"  opportunity_score: {score['total']} ({score['tier']})")
+        _warn_score_mismatch(opportunity["recommendation"], score["tier"])
 
     out_path.write_text(json.dumps(opportunity, indent=2, ensure_ascii=False) + "\n")
     print(f"✓ wrote {out_path.relative_to(ROOT)} ({out_path.stat().st_size} bytes)")
-    print(f"  recommendation: {opportunity['recommendation']} (confidence: {opportunity['confidence']})")
+    print(
+        f"  recommendation: {opportunity['recommendation']} "
+        f"(confidence: {opportunity['confidence']})"
+    )
 
     return opportunity
 

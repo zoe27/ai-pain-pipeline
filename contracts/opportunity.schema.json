@@ -115,9 +115,168 @@
       "minItems": 1,
       "maxItems": 8,
       "items": { "$ref": "#/definitions/ValidationItem" }
+    },
+    "commercial_assessment": {
+      "$ref": "#/definitions/CommercialAssessment"
+    },
+    "opportunity_score": {
+      "$ref": "#/definitions/OpportunityScore"
     }
   },
   "definitions": {
+    "CommercialAssessment": {
+      "type": "object",
+      "required": [
+        "pain_score",
+        "frequency_score",
+        "switching_cost",
+        "switching_willingness",
+        "workaround_analysis",
+        "buyer_mapping",
+        "persistence",
+        "economic_impact",
+        "competition_score"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pain_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "frequency_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "switching_willingness": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "10 = users actively seeking alternatives; 1 = locked in"
+        },
+        "switching_cost": { "$ref": "#/definitions/SwitchingCost" },
+        "workaround_analysis": { "$ref": "#/definitions/WorkaroundAnalysis" },
+        "buyer_mapping": { "$ref": "#/definitions/BuyerMapping" },
+        "persistence": { "$ref": "#/definitions/PersistenceAnalysis" },
+        "economic_impact": { "$ref": "#/definitions/EconomicImpact" },
+        "competition_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "10 = crowded market with strong incumbents"
+        }
+      }
+    },
+    "SwitchingCost": {
+      "type": "object",
+      "required": ["score", "rationale"],
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "10 = extremely hard to switch (Accounting, Email)"
+        },
+        "data_migration": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "learning_curve": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "team_collaboration": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "ecosystem_lock_in": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "sunk_cost": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "rationale": { "type": "string", "minLength": 20, "maxLength": 500 }
+      }
+    },
+    "WorkaroundAnalysis": {
+      "type": "object",
+      "required": [
+        "current_workarounds",
+        "quality_score",
+        "cost_to_user",
+        "satisfaction",
+        "rationale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "current_workarounds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "type": "string", "minLength": 3, "maxLength": 120 }
+        },
+        "quality_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "10 = good enough workarounds already exist (bad for new product)"
+        },
+        "cost_to_user": { "type": "string", "enum": ["low", "medium", "high"] },
+        "satisfaction": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "rationale": { "type": "string", "minLength": 20, "maxLength": 500 }
+      }
+    },
+    "BuyerMapping": {
+      "type": "object",
+      "required": ["user", "beneficiary", "buyer", "champion", "buyer_exists_score"],
+      "additionalProperties": false,
+      "properties": {
+        "user": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "beneficiary": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "buyer": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "champion": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "buyer_exists_score": { "type": "integer", "minimum": 1, "maximum": 10 }
+      }
+    },
+    "PersistenceAnalysis": {
+      "type": "object",
+      "required": ["root_cause_type", "owner", "score", "rationale"],
+      "additionalProperties": false,
+      "properties": {
+        "root_cause_type": {
+          "type": "string",
+          "enum": ["structural_permanent", "platform_bug", "regulatory", "unknown"]
+        },
+        "owner": {
+          "type": "string",
+          "enum": ["incumbent", "platform", "market", "none"]
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "10 = pain persists regardless of vendor fixes"
+        },
+        "rationale": { "type": "string", "minLength": 20, "maxLength": 500 }
+      }
+    },
+    "EconomicImpact": {
+      "type": "object",
+      "required": [
+        "roi_score",
+        "time_loss",
+        "revenue_at_risk",
+        "cashflow_impact",
+        "quantification_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "roi_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "time_loss": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "revenue_at_risk": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "cashflow_impact": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "quantification_notes": { "type": "string", "minLength": 20, "maxLength": 500 }
+      }
+    },
+    "OpportunityScore": {
+      "type": "object",
+      "required": ["total", "tier", "formula"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "tier": { "type": "string", "enum": ["high", "medium", "low", "watch"] },
+        "formula": { "type": "string", "minLength": 20, "maxLength": 300 },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numerator": { "type": "integer", "minimum": 0 },
+            "denominator": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
     "ConfidenceBasis": {
       "type": "object",
       "required": ["source_count", "product_count", "cross_run", "rationale"],

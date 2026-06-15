@@ -222,6 +222,50 @@ def build_stage3(pipeline_id: str) -> dict:
             for assumption in entry.get("assumptions_zh") or []:
                 _len_ok(assumption.strip(), 10, 200, "assumptions_zh")
         batch["evidence_ledger"] = evidence_ledger
+    if "commercial_assessment" in j:
+        ca = j["commercial_assessment"]
+        ca_out: dict = {}
+        if "switching_cost" in ca:
+            sc = ca["switching_cost"]
+            if "rationale_zh" in sc:
+                _len_ok(sc["rationale_zh"].strip(), 20, 500, "switching_cost.rationale_zh")
+                ca_out["switching_cost"] = {"rationale_zh": sc["rationale_zh"].strip()}
+        if "workaround_analysis" in ca:
+            wa = ca["workaround_analysis"]
+            wa_out: dict = {}
+            if "current_workarounds_zh" in wa:
+                wa_out["current_workarounds_zh"] = [
+                    w.strip() for w in wa["current_workarounds_zh"] if w.strip()
+                ]
+            if "rationale_zh" in wa:
+                _len_ok(wa["rationale_zh"].strip(), 20, 500, "workaround_analysis.rationale_zh")
+                wa_out["rationale_zh"] = wa["rationale_zh"].strip()
+            if wa_out:
+                ca_out["workaround_analysis"] = wa_out
+        if "buyer_mapping" in ca:
+            bm = ca["buyer_mapping"]
+            bm_out = {}
+            for key in ("user_zh", "beneficiary_zh", "buyer_zh", "champion_zh"):
+                if key in bm:
+                    _len_ok(bm[key].strip(), 3, 120, key)
+                    bm_out[key] = bm[key].strip()
+            if bm_out:
+                ca_out["buyer_mapping"] = bm_out
+        if "persistence" in ca and "rationale_zh" in ca["persistence"]:
+            _len_ok(ca["persistence"]["rationale_zh"].strip(), 20, 500, "persistence.rationale_zh")
+            ca_out["persistence"] = {"rationale_zh": ca["persistence"]["rationale_zh"].strip()}
+        if "economic_impact" in ca and "quantification_notes_zh" in ca["economic_impact"]:
+            _len_ok(
+                ca["economic_impact"]["quantification_notes_zh"].strip(),
+                20,
+                500,
+                "economic_impact.quantification_notes_zh",
+            )
+            ca_out["economic_impact"] = {
+                "quantification_notes_zh": ca["economic_impact"]["quantification_notes_zh"].strip()
+            }
+        if ca_out:
+            batch["commercial_assessment"] = ca_out
     out_path.write_text(json.dumps(batch, indent=2, ensure_ascii=False) + "\n")
     print(f"✓ wrote {out_path.relative_to(ROOT)}")
     return batch
