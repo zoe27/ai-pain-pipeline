@@ -130,6 +130,13 @@ def build(pipeline_id: str, source_file: str = "_raw/top50.json") -> dict:
     except Exception as e:
         print(f"WARN pain_clusters: {e}", file=sys.stderr)
 
+    from enrich_external_signals import run as enrich_external
+
+    try:
+        enrich_external(pipeline_id)
+    except Exception as e:
+        print(f"WARN external_signals: {e}", file=sys.stderr)
+
     return batch
 
 

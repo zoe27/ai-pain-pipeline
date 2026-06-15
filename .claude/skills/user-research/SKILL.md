@@ -24,11 +24,15 @@ description: 对 stage 2 高分痛点做用户研究，输出 Opportunity 到 ru
 
 ## 步骤
 
-### 1. 选研究对象
+### 1. 选研究对象 + 读商业预填
 
-- 从 stage 2 digest 取 🟢 档（total ≥ 200）
+- 从 stage 2 digest 取 🟢 档（total ≥ 200），或用 `focus` 指定 `pain_point_id`
 - **合并同主题**（如 job-search 的 spam + cold-apply 合成一条）
 - 读 stage 1 原文提取 **真实 quotes**
+- 读 `runs/{pipeline_id}/_raw/commercial_prefill.json`（`build_scored_batch.py` 自动生成）
+- 读 `_raw/external_signals.json` + `_raw/pain_clusters.json` 作为 `commercial_assessment` 数据锚点
+
+**Focus 模式**（Stage 0 `domain_context`）：`commercial_prefill.mode=focus`，`known_competitors` 驱动竞品提及；无 Stage 0 时为 `broad` 全市场模式。
 
 ### 2. 研究内容（Agent）
 
@@ -131,6 +135,11 @@ Pain × Frequency × ROI × SwitchingWill × Buyer × Persistence ÷ Competition
 ### 3. 调 helper
 
 ```bash
+# 若 stage 2 后尚无 commercial_prefill.json：
+python3 helpers/build_commercial_prefill.py {pipeline_id}
+# focus 指定锚点：
+python3 helpers/build_commercial_prefill.py {pipeline_id} --pain-point-id {uuid}
+
 python3 helpers/build_opportunity.py {pipeline_id}
 ```
 

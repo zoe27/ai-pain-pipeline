@@ -121,6 +121,9 @@
     },
     "opportunity_score": {
       "$ref": "#/definitions/OpportunityScore"
+    },
+    "external_signals_summary": {
+      "$ref": "#/definitions/ExternalSignalsSummary"
     }
   },
   "definitions": {
@@ -275,6 +278,53 @@
             "denominator": { "type": "integer", "minimum": 1 }
           }
         }
+      }
+    },
+    "ExternalSignalsSummary": {
+      "type": "object",
+      "required": ["mode", "switch_phrases", "agent_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["broad", "focus"] },
+        "cluster_id": { "type": "string" },
+        "switch_phrases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "workaround_phrases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "competitor_mentions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pricing_snippets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "persistence_prefill": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "root_cause_type": { "type": "string" },
+            "owner": { "type": "string" },
+            "score": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "rationale": { "type": "string" }
+          }
+        },
+        "suggested_scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "pain_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "switching_willingness": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "workaround_quality_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "persistence_score": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "competition_score": { "type": "integer", "minimum": 1, "maximum": 10 }
+          }
+        },
+        "agent_notes": { "type": "string", "minLength": 20, "maxLength": 500 }
       }
     },
     "ConfidenceBasis": {

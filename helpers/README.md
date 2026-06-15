@@ -21,6 +21,8 @@ Agent 免审批运行这些脚本：见 [`.cursor/permissions.json`](../.cursor/
 | `hn_comments.py` | HN Algolia items API → `comment_resonance` | `fetch_hn.py` |
 | `compute_radar_signals.py <pid>` | `top50.json` → `radar_signals.json` 主题聚类 | `fetch_radar.py` |
 | `compute_pain_clusters.py <pid>` | stage 1 痛点按主题@产品聚类 + 商业预筛 hints | `build_pain_batch.py`（自动） |
+| `enrich_external_signals.py <pid>` | Phase 2c：切换意愿 / GitHub 持续性 / 竞品定价片段 | `build_pain_batch.py`（自动） |
+| `build_commercial_prefill.py <pid>` | Stage 3 前商业分数启发式汇总（支持 `--pain-point-id` focus） | `build_scored_batch.py`（自动） |
 | `merge_radar_config.py <pid>` | Stage 0 `domain_context.json` → `runs/{pid}/radar.config.yaml` | `domain-focus` skill |
 | `build_domain_context.py <pid>` | Stage 0 judgments → `domain_context.json` | `domain-focus` skill |
 | `market_signals_enrich.py` | Google Trends 斜率 + HN 48h 评论增速 | `build_scored_batch.py` |

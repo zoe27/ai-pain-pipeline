@@ -146,6 +146,16 @@ opportunity_score:              # 由 build_opportunity.py 自动计算，勿手
 
 **Opportunity Score 分级**：high ≥ 2000 · medium ≥ 500 · low ≥ 100 · watch < 100。`recommendation` 应与 tier 大致对齐（helper 会 WARN 不一致）。
 
+### Phase 2c 外部信号（`_raw/external_signals.json`）
+
+Stage 1 后自动 enrich（`enrich_external_signals.py`）：
+
+- `switch_intent`：语料中切换意愿短语 + 1–10 分
+- `github.persistence_prefill`：issue 开/关状态 → 持续性启发式
+- `competitor_mentions` / `pricing_snippets`：Stage 0 `known_competitors`（focus 模式）或语料内 `$X/mo`
+
+Stage 2 写入 `market_signals.external_signals`；Stage 2 末生成 `_raw/commercial_prefill.json`；Stage 3 可选输出 `external_signals_summary`。
+
 ---
 
 ## 🚦 决策点 ①：GO / NO-GO
