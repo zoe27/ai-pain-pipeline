@@ -76,5 +76,5 @@ python3 helpers/eval_radar_quality.py \
 ## 尚未实现（见 project_thinking.md）
 
 - G2 / Google Play / Twitter 等高信噪比源（**App Store RSS 已接**，见 `fetch_app_store.py`）
-- Google Trends 实时 API
+- Google Trends 实时 API（**Stage 2 enrich 已接** `market_signals_enrich.py`，非 radar 层）
 - HN 评论全文 NLP（当前为短语计数）

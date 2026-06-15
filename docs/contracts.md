@@ -2,6 +2,24 @@
 
 > 关键原则：所有阶段输入/输出都是 **结构化 JSON**。AI 可以读自由文本，但**必须输出符合 schema 的 JSON**，否则视为失败。
 
+## 阶段 0：领域定向（可选）
+
+**输入：** 人与 Agent 对话  
+**输出：** `domain_context.json`（[`contracts/domain_context.schema.json`](../contracts/domain_context.schema.json)）
+
+```yaml
+domain: "internet SaaS / indie GTM"
+target_user: "solo founders with live product"
+hypothesis: "Distribution failure is the bottleneck"
+known_competitors: ["Mailwarm", "Hunter.io"]
+search_keywords: ["gtm", "cold email", "zero customers"]
+ice_priority: { impact: 1.2, confidence: 1.0, ease: 1.0 }
+```
+
+`merge_radar_config.py` 将其合并为 `runs/{pid}/radar.config.yaml`，供 Stage 1 使用。无 Stage 0 时以 **broad scan** 运行。
+
+---
+
 ## 阶段 1：痛点雷达
 
 **输入：** `RadarConfig`
