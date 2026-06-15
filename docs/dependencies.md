@@ -1,6 +1,23 @@
 # 依赖清单：每阶段用什么 Skill / 工具 / API
 
-## 全局基础设施（贯穿所有阶段）
+> **当前实现（v0.4）** 见下表「已实现」；本文后半部分的 Postgres / agency-agents / Dashboard 等为**目标架构**，尚未落地。
+
+## 已实现：本仓库 Skill + Helper（v0.4）
+
+| 阶段 | Skill | 关键 Helper | 产出 |
+|------|-------|-------------|------|
+| 0 领域定向（可选） | [`domain-focus`](../.claude/skills/domain-focus/SKILL.md) | `build_domain_context.py`, `merge_radar_config.py` | `domain_context.json` |
+| 1 痛点雷达 | [`pain-radar`](../.claude/skills/pain-radar/SKILL.md) | `fetch_radar.py`, `build_pain_batch.py`, `compute_pain_clusters.py`, `enrich_external_signals.py` | `1_pain_points.json` |
+| 2 ICE 评分 | [`score-pain`](../.claude/skills/score-pain/SKILL.md) | `build_scored_batch.py`, `market_signals_enrich.py`, `build_commercial_prefill.py` | `2_scored_pain_points.json` |
+| 3 用户研究 + 商业判断 | [`user-research`](../.claude/skills/user-research/SKILL.md) | `build_opportunity.py`, `digest.py`, `build_i18n.py` | `3_opportunity.json` |
+
+**数据源（已实现 fetcher）**：HN · Product Hunt · Reddit · GitHub Issues · App Store 1–2★ RSS。G2/Capterra 暂缓（#6）。
+
+**契约**：[`docs/contracts.md`](contracts.md) · JSON Schema 在 [`contracts/`](../contracts/)。
+
+---
+
+## 全局基础设施（目标架构，贯穿所有阶段）
 
 | 类别 | 工具 | 用途 |
 |------|------|------|
@@ -18,12 +35,12 @@
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
-| **AI 角色** | `agency-agents/marketing/market-researcher` | 评估抓到的内容 |
-| **数据源 API** | Reddit API、HN Algolia API、Product Hunt GraphQL、GitHub REST API | |
-| **抓取工具** | `playwright` 或 `firecrawl` 或 `CloakBrowser`（反检测时） | |
-| **LLM 模型** | claude-haiku-4-5（便宜批量分类） | |
-| **存储** | PostgreSQL `pain_points` 表 | |
-| **调度** | GitHub Actions cron（每天） / Cloudflare Cron Trigger | |
+| **本仓库 Skill** | `pain-radar` | Agent 写 `stage1.json` |
+| **抓取脚本** | `fetch_radar.py` + `fetch_*.py` | 多源合并 → `_raw/top50.json` |
+| **数据源 API** | HN Algolia、Product Hunt GraphQL、Reddit OAuth、GitHub REST、App Store RSS | PH/Reddit 需 `.env` |
+| **后处理** | `compute_pain_clusters.py`, `enrich_external_signals.py` | `build_pain_batch.py` 自动调用 |
+| **存储（当前）** | `runs/{pid}/1_pain_points.json` | 目标：PostgreSQL |
+| **调度（目标）** | GitHub Actions cron | #15 待实现 |
 
 ---
 
@@ -31,20 +48,21 @@
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
-| **AI 角色** | `agency-agents/strategy/business-analyst` | ICE 评分 |
-| **辅助数据** | Google Trends API、SimilarWeb、Crunchbase | 市场容量 |
-| **LLM 模型** | claude-sonnet-4-6（推理评估需要质量） | |
-| **存储** | PostgreSQL `scored_pain_points` 表 | |
+| **本仓库 Skill** | `score-pain` | ICE 评分 + 假痛点过滤 |
+| **辅助数据** | Google Trends（`market_signals_enrich.py`）、HN 48h 评论增速、`pain_clusters` | confidence 自动加成 |
+| **商业预填** | `build_commercial_prefill.py` | Stage 3 Agent 锚点 |
+| **存储（当前）** | `runs/{pid}/2_scored_pain_points.json` | |
 
 ---
 
-## 阶段 3：用户研究
+## 阶段 3：用户研究 + 商业判断
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
-| **AI 角色** | `agency-agents/product/user-researcher` + `K-Dense/scientific-agent-skills/research` | 用户画像 + 调研 |
-| **数据源** | 阶段 1 抓的原始评论 + Twitter/X | 用户原话提取 |
-| **LLM 模型** | claude-sonnet-4-6 | |
+| **本仓库 Skill** | `user-research` | 含 V2 `commercial_assessment` |
+| **数据源** | Stage 1 原文 + `commercial_prefill` + `external_signals` | quotes / 切换意愿 / 持续性 |
+| **自动评分** | `build_opportunity.py` | `opportunity_score` + tier WARN |
+| **输出** | `3_opportunity.json` + digest EN/ZH | 决策点 ① 输入 |
 
 ---
 
@@ -52,13 +70,14 @@
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
-| **通知** | Slack Bot + Email | 等你审 |
-| **Web Dashboard** | Next.js + shadcn/ui | 简单的 GO/NO-GO 按钮 |
-| **审批存储** | PostgreSQL `decisions` 表 | 审计 trail |
+| **当前实现** | 人读 `3_opportunity.digest.md` / `.zh.md` | 结合 `opportunity_score` + `recommendation` 拍板 |
+| **通知（目标）** | Slack Bot + Email | 等你审 |
+| **Web Dashboard（目标）** | Next.js + shadcn/ui | 简单的 GO/NO-GO 按钮 |
+| **审批存储（目标）** | PostgreSQL `decisions` 表 | 审计 trail |
 
 ---
 
-## 阶段 4：PRD 撰写
+## 阶段 4：PRD 撰写（目标占位 · #16）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -70,7 +89,7 @@
 
 ---
 
-## 阶段 5：架构设计
+## 阶段 5：架构设计（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -81,7 +100,7 @@
 
 ---
 
-## 🚦 决策点 ②：人工 UI
+## 🚦 决策点 ②：人工 UI（目标占位）
 
 同决策点 ①，外加：
 - 显示 PRD diff（如果是修改后的版本）
@@ -89,7 +108,7 @@
 
 ---
 
-## 阶段 6：编码 + TDD
+## 阶段 6：编码 + TDD（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -103,7 +122,7 @@
 
 ---
 
-## 阶段 7：测试 + 自审
+## 阶段 7：测试 + 自审（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -116,7 +135,7 @@
 
 ---
 
-## 🚦 决策点 ③：人工 UI
+## 🚦 决策点 ③：人工 UI（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -126,7 +145,7 @@
 
 ---
 
-## 阶段 8：部署 + 监控
+## 阶段 8：部署 + 监控（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -140,7 +159,7 @@
 
 ---
 
-## 阶段 9：运营 + 商业化
+## 阶段 9：运营 + 商业化（目标占位）
 
 | 资源类型 | 选择 | 备注 |
 |---------|------|------|
@@ -154,7 +173,7 @@
 
 ---
 
-## 🚦 决策点 ④：人工 UI
+## 🚦 决策点 ④：人工 UI（目标占位）
 
 显示：
 - 月度营收 / 增长曲线
@@ -193,12 +212,17 @@ model_routing:
 
 ```yaml
 data_sources:
-  - reddit_api
-  - hackernews_algolia_api
-  - producthunt_graphql_api
-  - github_rest_api
-  - google_trends_api
-  - similarweb_api (付费可选)
+  implemented:
+    - hackernews_algolia_api
+    - producthunt_graphql_api
+    - reddit_api
+    - github_rest_api
+    - app_store_rss
+    - google_trends_api          # Stage 2 enrich
+  deferred:
+    - g2_capterra                # #6
+    - similarweb_api
+    - twitter_api
 
 llm_providers:
   - anthropic_api  # Claude 模型

@@ -1,13 +1,16 @@
 # 完整流程图
 
+> **v0.4 已实现**：Stage 0（可选）+ Stage 1–3 + V2 商业判断层。Stage 4–9 与下方「运营/设计」子图为目标架构。
+
 ## 端到端流程（含决策点）
 
 ```mermaid
 flowchart TD
+    S0[0 领域定向<br/>domain_context 可选]
     subgraph Discovery [发现阶段：AI 全自动]
-        S1[1 痛点雷达<br/>Reddit/HN/PH/GitHub Issues]
-        S2[2 机会评估<br/>ICE/RICE 评分]
-        S3[3 用户研究<br/>画像 + 市场容量]
+        S1[1 痛点雷达<br/>HN/PH/Reddit/GitHub/App Store]
+        S2[2 ICE 评分<br/>聚类 dampening + 市场信号]
+        S3[3 用户研究<br/>画像 + V2 商业判断]
     end
 
     D1{🚦 决策点 ①<br/>GO/NO-GO}
@@ -33,6 +36,7 @@ flowchart TD
 
     D4{🚦 决策点 ④<br/>商业策略}
 
+    S0 -.->|可选| S1
     S1 --> S2 --> S3 --> D1
     D1 -- GO --> S4 --> S5 --> D2
     D1 -- NO-GO --> Reject[弃置 + 反馈池]
@@ -47,11 +51,21 @@ flowchart TD
 
 ## 数据流转视角
 
+**已实现（v0.4）**
+
 ```mermaid
 flowchart LR
-    PP[PainPoint] -->|评分| SPP[ScoredPainPoint]
-    SPP -->|研究| OPP[Opportunity]
-    OPP -->|🚦①| SO[SelectedOpportunity]
+    DC[domain_context] -.->|merge config| PP
+    PP[PainPoint<br/>+ clusters + external_signals] -->|ICE + prefill| SPP[ScoredPainPoint<br/>+ commercial_prefill]
+    SPP -->|研究 + commercial_assessment| OPP[Opportunity<br/>+ opportunity_score]
+    OPP -->|🚦① 人读 digest| D1[GO / WAIT / NO-GO]
+```
+
+**目标占位（Stage 4–9，未实现）**
+
+```mermaid
+flowchart LR
+    OPP[Opportunity] -->|🚦①| SO[SelectedOpportunity]
     SO -->|PRD| PRD[PRD]
     PRD -->|设计| TS[TechSpec]
     TS -->|🚦②| AS[ApprovedSpec]
@@ -59,7 +73,7 @@ flowchart LR
     PR -->|🚦③| DEP[Deployment]
     DEP -->|运营| LP[LiveProduct]
     LP -->|🚦④| GM[GrowthMetrics]
-    GM -.->|回流| PP
+    GM -.->|回流| PP[PainPoint]
 ```
 
 ## 失败/退回路径（重要）
@@ -77,19 +91,24 @@ flowchart TD
     Decide -- 终止 --> Abort[终止 pipeline]
 ```
 
+## Helper 自动步骤（v0.4）
+
+| 阶段 | Helper | 自动产出 |
+|------|--------|----------|
+| 0 | `build_domain_context.py` + `merge_radar_config.py` | `domain_context.json`, `radar.config.yaml` |
+| 1 | `build_pain_batch.py` | `pain_clusters.json`, `external_signals.json` |
+| 2 | `build_scored_batch.py` | `market_signals` enrich, `commercial_prefill.json` |
+| 3 | `build_opportunity.py` | `opportunity_score`, `external_signals_summary` |
+
 ## 并行 vs 串行
 
 | 阶段 | 串/并 | 说明 |
 |------|------|------|
+| 0 领域定向 | 串行 | 对话生成 domain_context（可选） |
 | 1 痛点雷达 | 并行 | 多数据源同时抓取 |
 | 2 机会评估 | 并行 | 每个痛点独立评分 |
 | 3 用户研究 | 串行 | 在选中痛点后顺序进行 |
-| 4 PRD | 串行 | 一次一个 |
-| 5 架构设计 | 串行 | 依赖 PRD |
-| 6 编码 | 并行 | 子任务可派多个 subagent（superpowers/dispatching-parallel-agents） |
-| 7 测试 | 并行 | 单元/集成/E2E 可并发 |
-| 8 部署 | 串行 | 必须有序 |
-| 9 运营 | 并行 | 多渠道同时跑 |
+| 4–9 | — | **目标占位**，见下方 Design/Build/Operate 子图 |
 
 ## 时间维度
 

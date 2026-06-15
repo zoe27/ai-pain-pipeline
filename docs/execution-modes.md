@@ -3,6 +3,8 @@
 > Pipeline 必须支持两件事：
 > 1. **任何阶段都能单独跑** —— 不用全链路才能用
 > 2. **不锁定单一 AI 工具** —— 阶段可以跑在 Claude Code / Cursor / Codex CLI / API 等任何环境
+>
+> **当前 v0.4**：无统一 `pipeline run` CLI；按 [README](../README.md) 逐步调用 `helpers/*.py` + Agent skill。下文 CLI 为**目标设计**。
 
 ---
 

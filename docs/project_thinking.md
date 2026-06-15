@@ -86,7 +86,7 @@ domain_context:
 
 Stage 1 的 prompt 读这个上下文，Stage 2 的 ICE 评分也用它调整权重，不需要改架构。
 
-更进一步，可以在 Stage 1 之前加一个 **Stage 0：领域对话**，输出就是 `domain_context`，由人和 AI 通过几轮对话共同生成，作为整条 pipeline 的「定向锚」。
+**已实现**：Stage 0 领域对话（`domain-focus` skill）输出 `domain_context.json`，作为整条 pipeline 的「定向锚」。
 
 ```
 [0 领域对话] → domain_context.json
@@ -128,10 +128,24 @@ python3 helpers/eval_radar_quality.py --benchmark benchmarks/radar_quality_pipe_
 
 详见 [`docs/radar_quality.md`](radar_quality.md)。
 
+### v0.4 — V2 商业判断层（#23，已关闭）
+
+| 项 | 实现 |
+|----|------|
+| `commercial_assessment` 五维 + `opportunity_score` | `build_opportunity.py`, `contracts/opportunity.schema.json` |
+| 痛点聚类 + echo dampening | `compute_pain_clusters.py` → Stage 2 |
+| 外部信号 enrich | `enrich_external_signals.py`（切换意愿、GitHub 持续性） |
+| Stage 3 商业预填 | `build_commercial_prefill.py` |
+| digest 商业区块 | `digest.py` EN/ZH |
+
+验证 run：`pipe_2026-06-15_001`（SteadyBooks）、`_002`（DevPulse）、`_003`（ClearWave）。
+
 ### 待扩展（非阻塞）
 
 | 项 | 说明 |
 |----|------|
-| G2 / App Store / Twitter | 高信噪比源，需独立 fetcher |
-| Google Trends | Stage 2 enrich |
-| HN 定向关键词搜索 | project #4，独立 CLI |
+| G2 / Capterra | #6 epic，需独立 adapter |
+| Twitter/X | 实时吐槽源 |
+| HN 定向关键词搜索 | #14，独立 CLI |
+| Reddit OAuth smoke | #12 |
+| Stage 4 PRD | #16，决策点 ① GO 后 |

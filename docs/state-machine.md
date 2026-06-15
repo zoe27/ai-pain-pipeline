@@ -1,11 +1,15 @@
 # Pipeline 状态机
 
+> **说明**：本文描述**目标**编排架构（Postgres / Event Bus / 决策超时）。**当前 v0.4 实现**为 `runs/{pipeline_id}/` 下的 JSON 产物 + 人工读 digest 决策，无中央状态存储。见 [README](../README.md) 快速开始。
+
 ## 顶层状态图
 
 ```mermaid
 stateDiagram-v2
     [*] --> idle
-    idle --> radar_running: 阶段 1 启动
+    idle --> domain_focus: 阶段 0 启动（可选）
+    domain_focus --> radar_running: domain_context 就绪
+    idle --> radar_running: 跳过 Stage 0
     radar_running --> radar_done: 抓取完成
     radar_running --> radar_failed: 抓取失败
     radar_failed --> radar_running: 自动重试 ≤3
@@ -44,7 +48,7 @@ stateDiagram-v2
 
 | 状态类型 | 状态名 | 说明 |
 |----------|--------|------|
-| **运行态** | `radar_running` `evaluating` `researching` `drafting_prd` `designing_arch` `implementing` `testing` `deploying` `operating` | AI 正在执行 |
+| **运行态** | `domain_focus` `radar_running` `evaluating` `researching` `drafting_prd` `designing_arch` `implementing` `testing` `deploying` `operating` | AI 正在执行 |
 | **等待态** | `awaiting_decision_1/2/3/4` | 等人决策 |
 | **失败态** | `*_failed` | 阶段失败，等重试或人工 |
 | **告警态** | `human_alert` | 重试超限，必须人工介入 |
@@ -91,6 +95,10 @@ retry_policy:
 5. **回滚可逆**：从决策点退回时必须保留之前的产出（不删数据）
 
 ## 状态持久化
+
+**当前实现**：`runs/{pipeline_id}/` 下的 JSON + `_judgments/` + `_raw/`（本地文件，gitignore）。
+
+**目标占位**：
 
 ```yaml
 storage:
