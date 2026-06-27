@@ -24,10 +24,3 @@
 | `ops-growth` | 阶段 9 运营商业化 |
 | `pipeline-run` | 元 skill：串起来跑 |
 | `pipeline-status` | 看当前 pipeline 状态 |
-
-独立 skill（不参与痛点发现 pipeline）：
-
-| Skill | 说明 |
-|-------|------|
-| `xiaohongshu` | **入口**：为本项目写小红书帖；调用 `xiaohongshu-specialist` |
-| `xiaohongshu-specialist` | 专家能力（平台策略、KPI、工作流）；由 `xiaohongshu` 引用 |
