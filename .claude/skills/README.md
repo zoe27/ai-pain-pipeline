@@ -12,6 +12,7 @@
 
 | Skill | 对应阶段 |
 |-------|---------|
+| `domain-focus` | 阶段 0 领域定向（可选） |
 | `pain-radar` | 阶段 1 痛点雷达 |
 | `score-pain` | 阶段 2 机会评估 |
 | `user-research` | 阶段 3 用户研究 |
@@ -24,4 +25,9 @@
 | `pipeline-run` | 元 skill：串起来跑 |
 | `pipeline-status` | 看当前 pipeline 状态 |
 
-> 占坑中。第一片实现先从 `pain-radar` 开始。
+独立 skill（不参与痛点发现 pipeline）：
+
+| Skill | 说明 |
+|-------|------|
+| `xiaohongshu` | **入口**：为本项目写小红书帖；调用 `xiaohongshu-specialist` |
+| `xiaohongshu-specialist` | 专家能力（平台策略、KPI、工作流）；由 `xiaohongshu` 引用 |

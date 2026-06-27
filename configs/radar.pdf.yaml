@@ -1,0 +1,204 @@
+# Pain Radar — PDF 相关痛点挖掘
+# 聚焦：PDF翻译、编辑、大文件处理、转换、标注等场景
+# 运行: python3 helpers/fetch_radar.py <pipeline_id> --config configs/radar.pdf.yaml
+
+domain_context:
+  domain: "PDF tools / document processing"
+  target_user: "researchers, translators, content creators, business professionals"
+  hypothesis: "PDF workflows are fragmented and painful"
+  known_competitors: ["Adobe Acrobat", "PDFtk", "Smallpdf", "ILovePDF"]
+  search_keywords:
+    - pdf
+    - translation
+    - document
+    - conversion
+    - editing
+    - annotation
+    - ocr
+    - merge
+    - split
+    - compress
+  ice_priority:
+    impact: 1.1      # PDF痛点通常影响很多人
+    confidence: 1.0  
+    ease: 0.9        # PDF处理有一定技术门槛
+
+sources:
+  - type: hackernews
+    enabled: true
+    tags:
+      - ask_hn
+      - show_hn
+      - story
+    keywords:
+      - pdf
+      - document
+      - translation
+      - ocr
+      - latex
+      - pandoc
+      - markdown
+      - conversion
+      - adobe
+      - acrobat
+      - annotation
+      - markup
+      - research
+      - paper
+      - thesis
+      - bibliography
+      - citation
+      - zotero
+      - mendeley
+      - academic
+      - publishing
+      - journal
+      - manuscript
+      - reviewer
+      - peer-review
+      - preprint
+      - arxiv
+      - pubmed
+      - scholar
+      - watermark
+      - signature
+      - form
+      - fillable
+      - merge
+      - split
+      - compress
+      - large-file
+      - slow
+      - memory
+      - crash
+    min_points: 5
+
+  - type: github_issues
+    enabled: true
+    mode: product_pain
+    repos:
+      - mozilla/pdf.js
+      - PyPDF/pypdf
+      - jsvine/pdfplumber  
+      - pdfminer/pdfminer.six
+      - pymupdf/PyMuPDF
+      - galkahana/PDF-Writer
+      - elastic/elasticsearch
+      - apache/tika
+      - gotenberg/gotenberg
+    labels: [bug, enhancement, feature-request]
+    min_comments: 3
+    pain_keywords:
+      - slow
+      - memory
+      - crash
+      - corrupt
+      - encoding
+      - font
+      - image
+      - table
+      - extraction
+      - parsing
+      - layout
+      - formatting
+      - translation
+      - ocr
+      - large
+      - performance
+
+  - type: producthunt
+    enabled: true
+    topics: 
+      - productivity
+      - developer-tools
+      - design-tools
+    min_votes: 5
+    keywords:
+      - pdf
+      - document
+      - translation
+      - ocr
+      - editor
+      - converter
+
+  - type: reddit
+    enabled: true
+    subreddits:
+      - LaTeX
+      - AskAcademia
+      - GradSchool
+      - PhD
+      - researchpaper
+      - AcademicWriting
+      - freelanceWriters
+      - translator
+      - languagelearning
+      - programming
+      - webdev
+      - MacOS
+      - Windows
+      - linux
+      - selfhosted
+    min_upvotes: 5
+    keywords:
+      - pdf
+      - document
+      - translation
+      - latex
+      - conversion
+      - adobe
+      - annotation
+      - research
+      - paper
+      - thesis
+      - citation
+      - bibliography
+      - reviewer
+      - manuscript
+      - journal
+      - publishing
+      - watermark
+      - signature
+      - form
+      - merge
+      - split
+      - compress
+      - ocr
+      - scan
+      - digitize
+
+filters:
+  focus: pdf_document_processing
+  language: en
+  date_range: last_7_days
+  exclude_keywords:
+    - cryptocurrency
+    - blockchain
+    - trading
+    - stocks
+    - investment
+    - politics
+    - news
+    - climate
+    - energy
+    - solar
+    - parenting
+    - dating
+    - fashion
+    - sports
+    - gaming
+    - entertainment
+  quality:
+    enabled: true
+    drop_product_launches: false  # PDF工具发布可能有用
+    drop_producthunt_launches: false
+    drop_job_seeking: true
+    drop_celebrations: true
+    require_pain_signal_for_show_hn: true
+    require_business_pain_for_ask_hn: false  # 学术痛点也要
+    drop_off_topic_meta_web: true
+    fetch_comment_resonance: true
+    min_comment_resonance: 0
+
+limit_per_source: 80
+top_per_source: 15

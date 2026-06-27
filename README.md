@@ -19,36 +19,39 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. 生成 pipeline_id（格式 pipe_YYYY-MM-DD_NNN）
+# 2. （可选）API token — 仅本地 .env，切勿提交仓库
+cp .env.example .env   # 填 PRODUCTHUNT_TOKEN / Reddit OAuth 等；HN 无需 key
+
+# 3. 生成 pipeline_id（格式 pipe_YYYY-MM-DD_NNN）
 PIPE=pipe_$(date +%Y-%m-%d)_001
 mkdir -p runs/$PIPE/_raw runs/$PIPE/_judgments
 
-# 3. （可选）Stage 0 — 领域定向，收窄扫描范围
+# 4. （可选）Stage 0 — 领域定向，收窄扫描范围
 # → Agent 写 runs/$PIPE/_judgments/stage0.json
 python3 helpers/build_domain_context.py $PIPE
 python3 helpers/merge_radar_config.py $PIPE --base configs/radar.example.yaml
 # 无 Stage 0 时直接用 --config configs/radar.example.yaml 或 radar.market_balanced.yaml
 
-# 4. Stage 1 — 抓取互联网/SaaS 痛点
+# 5. Stage 1 — 抓取互联网/SaaS 痛点
 python3 helpers/fetch_radar.py $PIPE --config configs/radar.example.yaml
 # → Agent 写 runs/$PIPE/_judgments/stage1.json（sentiment + keywords）
 python3 helpers/build_pain_batch.py $PIPE   # 自动：聚类 + 外部信号 enrich
 python3 helpers/build_i18n.py $PIPE --stage 1
 python3 helpers/digest.py runs/$PIPE/1_pain_points.json
 
-# 5. Stage 2 — ICE 评分
+# 6. Stage 2 — ICE 评分
 # → Agent 写 runs/$PIPE/_judgments/stage2.json
 python3 helpers/build_scored_batch.py $PIPE   # 自动：Trends/HN 增速 + commercial_prefill
 python3 helpers/build_i18n.py $PIPE --stage 2
 python3 helpers/digest.py runs/$PIPE/2_scored_pain_points.json
 
-# 6. Stage 3 — 用户研究 + 商业判断
+# 7. Stage 3 — 用户研究 + 商业判断
 # → Agent 写 runs/$PIPE/_judgments/stage3.json（含 commercial_assessment）
 python3 helpers/build_opportunity.py $PIPE   # 自动：opportunity_score + tier WARN
 python3 helpers/build_i18n.py $PIPE --stage 3
 python3 helpers/digest.py runs/$PIPE/3_opportunity.json
 
-# 7. 🚦 决策点 ① — 人读 digest，决定 GO / WAIT / NO-GO
+# 8. 🚦 决策点 ① — 人读 digest，决定 GO / WAIT / NO-GO
 ```
 
 Agent 步骤（写 `_judgments/stageN.json`）在 Cursor / Claude Code 中触发对应 skill 即可，详见 [.claude/skills/](./.claude/skills/)。
@@ -334,4 +337,6 @@ ai-pain-pipeline/
 
 ## 许可证
 
-待定。
+[MIT](./LICENSE) — 见仓库根目录 `LICENSE`。
+
+安全与凭证说明见 [SECURITY.md](./SECURITY.md)。`.env` 与 `runs/` 已在 `.gitignore` 中，请勿强行加入版本库。
