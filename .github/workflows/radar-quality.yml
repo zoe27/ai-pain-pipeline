@@ -9,10 +9,6 @@ on:
       - "benchmarks/**"
       - "configs/radar.example.yaml"
   pull_request:
-    paths:
-      - "helpers/**"
-      - "benchmarks/**"
-      - "configs/radar.example.yaml"
 
 jobs:
   benchmark:
