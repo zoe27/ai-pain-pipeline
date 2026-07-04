@@ -1,8 +1,9 @@
-# Balanced full-market scan.
+# Recommended global scan config: balanced full-market scan.
 #
 # Goal: reduce the bias seen in radar.full_run.yaml where one App Store product
 # can dominate the entire run. This config keeps multiple sources enabled and
 # uses cross-category discovery instead of hard-coding a single product vertical.
+# Use this for broad "global pain analysis" runs before narrowing with Stage 0.
 domain_context:
   domain: "broad internet SaaS / SMB operations / indie tools"
   target_user: "solo founders, bootstrapped SaaS builders, and SMB operators"

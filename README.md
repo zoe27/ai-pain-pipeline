@@ -60,8 +60,8 @@ Agent 步骤（写 `_judgments/stageN.json`）在 Cursor / Claude Code 中触发
 
 | 配置 | 用途 |
 |------|------|
-| [`configs/radar.example.yaml`](./configs/radar.example.yaml) | 默认多源（HN + PH + Reddit） |
-| [`configs/radar.market_balanced.yaml`](./configs/radar.market_balanced.yaml) | 全市场 balanced 扫描（HN + GitHub + App Store） |
+| [`configs/radar.example.yaml`](./configs/radar.example.yaml) | 默认轻量扫描（HN + PH；Reddit / GitHub / App Store 默认关闭） |
+| [`configs/radar.market_balanced.yaml`](./configs/radar.market_balanced.yaml) | 推荐全局扫描（HN + GitHub + PH + Reddit + App Store；缺凭证的源会 WARN 后跳过） |
 | [`configs/radar.full_run.yaml`](./configs/radar.full_run.yaml) | 单产品深潜（如 QuickBooks App Store） |
 
 ---
