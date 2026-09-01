@@ -1,0 +1,81 @@
+name: Pain Radar (Manual)
+
+# 暂不设 cron；需要时在 GitHub Actions 页手动 workflow_dispatch 触发。
+# 日后启用定时：取消下方 schedule 注释。
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 2 * * *'  # 每天 02:00 UTC（北京时间 10:00）
+
+jobs:
+  pain-radar:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Generate pipeline ID
+        id: pipeline_id
+        run: |
+          PIPE_ID="pipe_$(date +%Y-%m-%d)_$(printf '%03d' $((GITHUB_RUN_NUMBER % 1000)))"
+          echo "pipeline_id=$PIPE_ID" >> $GITHUB_OUTPUT
+          mkdir -p runs/$PIPE_ID/_raw runs/$PIPE_ID/_judgments
+      
+      - name: Fetch pain points
+        env:
+          PRODUCTHUNT_TOKEN: ${{ secrets.PRODUCTHUNT_TOKEN }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 helpers/fetch_radar.py ${{ steps.pipeline_id.outputs.pipeline_id }} \
+            --config configs/radar.market_balanced.yaml
+      
+      - name: Upload raw data
+        uses: actions/upload-artifact@v3
+        with:
+          name: pain-radar-${{ steps.pipeline_id.outputs.pipeline_id }}
+          path: runs/${{ steps.pipeline_id.outputs.pipeline_id }}/_raw/
+      
+      - name: Notify Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🎯 新 Pipeline 已启动",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Pipeline ID:* `${{ steps.pipeline_id.outputs.pipeline_id }}`\n*Stage 1 抓取完成* ✅\n\n下一步: 运行 `pain-radar` skill 生成 stage1.json"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "查看数据"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
