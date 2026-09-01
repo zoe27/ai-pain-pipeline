@@ -100,12 +100,29 @@ search_keywords: [ci, pipeline, slow build]
 ### DemandRadar — G0 产品锚定
 
 ```yaml
-product_url: "https://example.com"
+# 产品输入（多种方式）
+product_url: "https://example.com"               # 官网
+github_repo: "https://github.com/user/project"   # 或 GitHub
 product_description: "AI PDF processing SaaS"
 core_capabilities: [pdf-to-excel, ocr, batch-processing]
 target_keywords: [pdf converter, pdf ocr, pdf api]
 competitors: [Adobe Acrobat, Smallpdf, ILovePDF]
-scan_sources: [reddit, hackernews, google_autocomplete]  # MVP 子集
+
+# 扫描配置
+scan_sources: 
+  - reddit           # 默认
+  - hackernews       # 默认
+  - quora            # 可选
+  - twitter          # 可选
+  
+# 账号配置（用于后续一键发布）
+connected_accounts:
+  reddit:
+    username: "your_reddit_user"
+    auth_token: "..."   # 通过 OAuth 获取
+  twitter:
+    handle: "@yourhandle"
+    auth_token: "..."
 ```
 
 模式：**产品锚定扫描**，只找「与已有产品相关的 demand」。

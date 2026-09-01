@@ -31,9 +31,12 @@
 
 | 文档 | 内容 |
 |------|------|
+| **[architecture.md](./architecture.md)** | **🏗️ 整体架构、G0-G4 流水线、组件设计、数据流、实现顺序** |
 | [product-definition.md](./product-definition.md) | 产品定义、四模块、用户工作流、护城河、商业模式 |
 | [pain-pipeline-relationship.md](./pain-pipeline-relationship.md) | 与 Stage 0–9 的映射、复用与增量、信号差异 |
 | [mvp-roadmap.md](./mvp-roadmap.md) | 三阶段 MVP、Growth Stage 规划、实现清单 |
+| [ui-and-workflow-details.md](./ui-and-workflow-details.md) | 输入方式、渠道配置、账号连接、UI 设计、一键发布、数据结构 |
+| [zhihu-mvp-strategy.md](./zhihu-mvp-strategy.md) | 知乎最小切入点、爬取策略、回答生成、Phase 1 聚焦 |
 
 ---
 
@@ -47,9 +50,12 @@
 
 ## 下一步（本分支）
 
-1. ✅ 需求与架构文档（当前）
-2. ⬜ Growth Stage JSON Schema 契约
-3. ⬜ `product-focus` skill（产品 URL → 扫描锚点）
-4. ⬜ `demand-radar` skill（intent 模式抓取 + 聚类）
-5. ⬜ Demand Score + SEO Opportunity 输出
-6. ⬜ Demand Map digest / 简单 UI
+1. ✅ 需求与架构文档
+2. ✅ 知乎 MVP 策略
+3. ⬜ Growth Stage JSON Schema 契约（知乎版）
+4. ⬜ `product-focus` skill（产品 URL → 扫描锚点）
+5. ⬜ `zhihu-demand-radar` skill（知乎 intent 识别 + 聚类）
+6. ⬜ `fetch_zhihu.py`（爬虫 + 反爬）
+7. ⬜ G4 知乎回答生成 skill
+8. ⬜ Demand Score + 知乎回答 Opportunity 输出
+9. ⬜ Demand Map digest / 简单 UI

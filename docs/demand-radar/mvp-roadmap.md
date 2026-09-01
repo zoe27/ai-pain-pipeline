@@ -19,15 +19,17 @@ Phase 3           Programmatic SEO Engine（模板 → 生成 → 监控）
 **做：**
 
 - G0 产品锚定（输入产品 URL / 描述 → `product_context.json`）
-- G1 Demand 发现（Reddit + HN，**intent 模式**）
+- G1 Demand 发现（**知乎单一渠道**，**intent 模式**）
 - G2 聚类 + Demand Score
-- G3 SEO Opportunity 列表（「你应该做这 N 个页面，以及为什么」）
+- G3 增长机会列表（知乎回答机会 + SEO 页面建议）
+- G4 知乎回答草稿生成（包含原问题链接、问题内容、生成的回答）
 - Demand Map digest（`.digest.md`）
 
 **不做：**
 
-- Google Search 全量接入（Phase 1 可用 Trends / autocomplete 轻量替代）
-- 社区回复自动生成（Phase 2）
+- Reddit/HN 等海外渠道（Phase 2）
+- Google Search 全量接入（Phase 2）
+- 知乎自动发布（Phase 2，MVP 只生成草稿）
 - 页面自动发布 / Programmatic SEO（Phase 3）
 - Outcome Feedback 闭环（Phase 3+，需 traffic 数据）
 
@@ -35,10 +37,14 @@ Phase 3           Programmatic SEO Engine（模板 → 生成 → 监控）
 
 ```
 作为已有 PDF SaaS 的创始人，
-我输入产品 URL，
-系统告诉我与产品相关的 top 50 demand clusters，
-每个 cluster 给出 SEO 页面建议和 Demand Score，
-以便我决定优先做哪些落地页。
+我输入产品 URL 或描述，
+系统扫描知乎相关问题（如「有哪些好用的 PDF 转换工具？」），
+告诉我 top 20 个最值得回答的问题，
+每个问题给出：
+  - 问题热度和商业价值评分
+  - AI 生成的回答草稿
+  - 原问题链接
+以便我快速复制粘贴到知乎获取流量。
 ```
 
 ### 2.3 MVP 输出示例
@@ -85,49 +91,104 @@ Phase 3           Programmatic SEO Engine（模板 → 生成 → 监控）
 }
 ```
 
+`g4_content_drafts.json` 中的知乎回答示例：
+
+```json
+{
+  "zhihu_answers": [
+    {
+      "answer_id": "ans_001",
+      "cluster_id": "pdf-to-excel",
+      "platform": "zhihu",
+      "source": {
+        "url": "https://www.zhihu.com/question/123456789",
+        "question_id": "123456789",
+        "title": "有哪些好用的 PDF 转 Excel 工具？",
+        "author": "知乎用户",
+        "created_at": "2026-08-25T10:00:00Z",
+        "follower_count": 847,
+        "answer_count": 23,
+        "view_count": 12400,
+        "question_detail": "工作中经常需要把 PDF 表格转成 Excel，手动复制太麻烦，有什么好工具推荐吗？最好能保留格式..."
+      },
+      "generated_answer": {
+        "text": "推荐几个我用过的工具：\n\n1. **[你的产品]**\n优点：AI 识别准确率高，特别是复杂表格...\n\n2. Adobe Acrobat（付费）\n3. Smallpdf（免费额度有限）\n\n如果是批量处理，建议用...",
+        "tone": "professional",
+        "mentions_product": true,
+        "product_position": "first",
+        "word_count": 420
+      },
+      "opportunity_score": 87,
+      "signals": {
+        "relevance": 95,
+        "commercial_intent": "high",
+        "competition_level": "medium",
+        "freshness": "recent",
+        "engagement": "high"
+      },
+      "publish_status": "pending",
+      "published_at": null,
+      "published_url": null
+    }
+  ]
+}
+```
+
 ### 2.4 MVP 技术任务清单
 
 | # | 任务 | 依赖 | 状态 |
 |---|------|------|------|
-| D1 | 需求文档 | — | ✅ |
+| D1 | 需求文档（知乎版） | — | ✅ |
 | D2 | `contracts/product_context.schema.json` | D1 | ⬜ |
-| D3 | `contracts/demand_cluster.schema.json` | D1 | ⬜ |
-| D4 | `contracts/growth_opportunities.schema.json` | D1 | ⬜ |
-| D5 | `.claude/skills/product-focus/SKILL.md` (G0) | D2 | ⬜ |
-| D6 | `.claude/skills/demand-radar/SKILL.md` (G1) | D2 | ⬜ |
-| D7 | `configs/radar.intent.example.yaml` | D6 | ⬜ |
-| D8 | Intent 过滤 prompt / 句式库 | D6 | ⬜ |
-| D9 | `helpers/build_product_context.py` | D2, D5 | ⬜ |
-| D10 | `helpers/build_demand_batch.py` (G1 拼装) | D3, D6 | ⬜ |
-| D11 | `helpers/build_demand_clusters.py` (G2) | D3 | ⬜ |
-| D12 | `helpers/build_growth_opportunities.py` (G3) | D4 | ⬜ |
-| D13 | `helpers/digest.py` 扩展 Growth 阶段 | D12 | ⬜ |
-| D14 | `docs/contracts.md` 补充 Growth Stage | D2–D4 | ⬜ |
-| D15 | 示例 run `runs/growth_*` + walkthrough | D12 | ⬜ |
+| D3 | `contracts/zhihu_signal.schema.json` | D1 | ⬜ |
+| D4 | `contracts/zhihu_answer_draft.schema.json` | D1 | ⬜ |
+| D5 | `contracts/growth_opportunities.schema.json` | D1 | ⬜ |
+| D6 | `.claude/skills/product-focus/SKILL.md` (G0) | D2 | ⬜ |
+| D7 | `.claude/skills/zhihu-demand-radar/SKILL.md` (G1) | D2 | ⬜ |
+| D8 | `configs/radar.zhihu.example.yaml` | D7 | ⬜ |
+| D9 | 知乎 Intent 过滤 prompt / 句式库 | D7 | ⬜ |
+| D10 | `helpers/fetch_zhihu.py` (爬取知乎问题) | D3 | ⬜ |
+| D11 | `helpers/build_product_context.py` | D2, D6 | ⬜ |
+| D12 | `helpers/build_zhihu_signals.py` (G1 拼装) | D3, D7 | ⬜ |
+| D13 | `helpers/build_demand_clusters.py` (G2 聚类) | D3 | ⬜ |
+| D14 | `helpers/build_zhihu_answers.py` (G4 生成回答) | D4 | ⬜ |
+| D15 | `helpers/build_growth_opportunities.py` (G3) | D5 | ⬜ |
+| D16 | `helpers/digest.py` 扩展 Growth 阶段 | D15 | ⬜ |
+| D17 | `docs/contracts.md` 补充 Growth Stage | D2–D5 | ⬜ |
+| D18 | 示例 run `runs/growth_zhihu_*` + walkthrough | D16 | ⬜ |
 
 ### 2.5 MVP 运行命令（目标态）
 
 ```bash
-GROWTH=growth_$(date +%Y-%m-%d)_001
+GROWTH=growth_zhihu_$(date +%Y-%m-%d)_001
 mkdir -p runs/$GROWTH/_raw runs/$GROWTH/_judgments
 
 # G0 — 产品锚定（Agent: product-focus skill）
+# 输入：产品 URL 或描述
 # → 写 runs/$GROWTH/_judgments/g0.json
 python3 helpers/build_product_context.py $GROWTH
 
-# G1 — Demand 发现（Agent: demand-radar skill）
-python3 helpers/fetch_radar.py $GROWTH --config configs/radar.intent.example.yaml
+# G1 — 知乎 Demand 发现（Agent: zhihu-demand-radar skill）
+# 爬取知乎相关问题
+python3 helpers/fetch_zhihu.py $GROWTH --config configs/radar.zhihu.example.yaml
+# Agent 判断哪些是真实 intent
 # → 写 runs/$GROWTH/_judgments/g1.json
-python3 helpers/build_demand_batch.py $GROWTH
+python3 helpers/build_zhihu_signals.py $GROWTH
 
 # G2 — 聚类 + Demand Score
 # → 写 runs/$GROWTH/_judgments/g2.json
 python3 helpers/build_demand_clusters.py $GROWTH
 
-# G3 — SEO Opportunity
-# → 写 runs/$GROWTH/_judgments/g3.json
+# G3 — 增长机会总结
+# → 写 runs/$GROWTH/g3_growth_opportunities.json
 python3 helpers/build_growth_opportunities.py $GROWTH
-python3 helpers/digest.py runs/$GROWTH/g3_growth_opportunities.json
+
+# G4 — 知乎回答草稿生成
+# → 写 runs/$GROWTH/g4_zhihu_answers.json
+python3 helpers/build_zhihu_answers.py $GROWTH
+
+# Digest
+python3 helpers/digest.py runs/$GROWTH/g4_zhihu_answers.json
 ```
 
 ---

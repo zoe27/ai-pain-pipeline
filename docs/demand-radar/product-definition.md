@@ -159,8 +159,14 @@ Demand 发现: PDF→Excel, PDF→Word, PDF→CSV, PDF→JSON
 ### Step 1 — 输入产品
 
 ```
-We are an AI PDF processing SaaS.
-Website: https://example.com
+产品输入方式（任选）：
+- Website URL: https://example.com
+- GitHub Repo: https://github.com/user/project
+- 产品描述 + 关键词
+
+可选配置：
+- 指定扫描渠道（默认：Reddit + HN）
+- 关联社交账号（用于后续一键发布）
 ```
 
 ### Step 2 — 扫描
@@ -194,6 +200,11 @@ Product Opportunities:   21
 生成 SEO 页面草稿、文章、Reddit 回复、FAQ、内链建议。  
 **人只负责审核，不手写内容骨架。**
 
+每条建议包含：
+- 原帖链接 / 数据来源
+- 生成内容预览
+- 一键发布按钮（需配置账号）
+
 ---
 
 ## 5. 产品界面（MVP 设想）
@@ -204,7 +215,12 @@ Product Opportunities:   21
 ┌─────────────────────────────────────────┐
 │             DemandRadar                 │
 │     Discover what your customers want   │
-│  [ Enter your website / product URL ]   │
+│                                         │
+│  [ Enter URL/GitHub/Description ]       │
+│                                         │
+│  扫描渠道: ☑ Reddit ☑ HN ☐ Quora       │
+│  账号配置: [ Connect Reddit ] [ Connect X ] │
+│                                         │
 │               [ Analyze ]               │
 └─────────────────────────────────────────┘
 ```
@@ -218,13 +234,43 @@ Your Demand Map
 
 1. PDF → Excel          Demand Score: 94
    Search: High | Community: High | Competition: Medium
-   [ Create SEO Page ]  [ Find Discussions ]
+   [ View Details ]  [ Create SEO Page ]
+```
 
-2. Invoice OCR          Demand Score: 89
-   [ Explore ]
+点击 `View Details` 展开：
 
-3. PDF API              Demand Score: 87
-   [ Explore ]
+```
+┌─────────────────────────────────────────────────────────┐
+│ Demand: PDF → Excel (Score: 94)                         │
+├─────────────────────────────────────────────────────────┤
+│ 📊 SEO Opportunities (3)                                │
+│                                                         │
+│ 1. /pdf-to-excel - Converter Landing                   │
+│    Preview: [See page mockup]                          │
+│    [ Generate ] [ Edit ] [ Publish ]                    │
+│                                                         │
+│ 2. /guides/how-to-convert-pdf-to-excel                 │
+│    Preview: [See article outline]                      │
+│    [ Generate ]                                         │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│ 💬 Community Opportunities (8)                          │
+│                                                         │
+│ Reddit • r/productivity • 2 days ago                    │
+│ "Anyone know a good PDF to Excel converter?"           │
+│                                                         │
+│ Your Reply:                                             │
+│ "I've been using [your product] for this. It handles   │
+│  scanned PDFs really well and has batch processing..." │
+│                                                         │
+│ [ View Original Post ] [ Edit Reply ] [ Post to Reddit ]│
+│                                                         │
+│ ──────────────────────────────────────────────────────│
+│                                                         │
+│ HN • Ask HN • 5 days ago                               │
+│ "Best tools for extracting tables from PDF?"           │
+│ ...                                                     │
+└─────────────────────────────────────────────────────────┘
 ```
 
 设计原则：**Opportunity → Action**，不停留在数据分析。

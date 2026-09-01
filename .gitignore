@@ -1,6 +1,11 @@
 .env
 .venv/
 runs/
+
+# Zhihu login cookies (never commit)
+configs/zhihu.cookies.json
+**/zhihu.cookies.json
+!configs/zhihu.cookies.example.json
 .cursor/*
 !.cursor/permissions.json
 !.cursor/hooks.json

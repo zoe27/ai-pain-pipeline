@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zhihu_signal.schema.json",
+  "title": "Zhihu Demand Signal",
+  "description": "G1 output: filtered Zhihu questions with intent detected",
+  "type": "object",
+  "required": [
+    "growth_id",
+    "created_at",
+    "signals",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "growth_id": {
+      "type": "string",
+      "pattern": "^growth_zhihu_\\d{4}-\\d{2}-\\d{2}_\\d{3}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": [
+          "signal_id",
+          "platform",
+          "question_id",
+          "url",
+          "title",
+          "intent_detected"
+        ],
+        "properties": {
+          "signal_id": {
+            "type": "string",
+            "pattern": "^zhihu_q_\\d+$"
+          },
+          "platform": {
+            "const": "zhihu"
+          },
+          "question_id": {
+            "type": "string",
+            "description": "Zhihu question ID"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200
+          },
+          "detail": {
+            "type": "string",
+            "description": "Question detail/description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author": {
+            "type": "string"
+          },
+          "follower_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of people following this question"
+          },
+          "answer_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "view_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "latest_activity": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When was the last answer/comment"
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Zhihu topic tags"
+          },
+          "intent_detected": {
+            "type": "boolean",
+            "description": "Does this question contain intent signal?"
+          },
+          "intent_type": {
+            "type": "string",
+            "enum": [
+              "tool_recommendation",
+              "comparison",
+              "how_to",
+              "alternative_seeking",
+              "unknown"
+            ]
+          },
+          "relevance_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "How relevant to our product (0-100)"
+          },
+          "commercial_intent": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "description": "Likelihood of commercial conversion"
+          },
+          "keywords_matched": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Which target keywords matched"
+          },
+          "reasoning": {
+            "type": "string",
+            "description": "Why this signal was included/excluded"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["raw_count", "filtered_count"],
+      "properties": {
+        "raw_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total questions fetched"
+        },
+        "filtered_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Questions with intent detected"
+        },
+        "keywords_searched": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "date_range": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

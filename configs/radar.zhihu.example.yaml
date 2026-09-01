@@ -1,0 +1,58 @@
+# Zhihu Demand Radar Configuration
+# MVP 示例配置
+
+# 爬取配置
+fetch:
+  # 每个关键词最多爬取多少个问题
+  max_questions_per_keyword: 20
+  
+  # 话题相关问题（可选）
+  max_questions_per_topic: 30
+  
+  # 竞品相关问题（可选）
+  max_questions_per_competitor: 15
+  
+  # 时间范围（天）
+  date_range_days: 90
+
+# 反爬策略
+anti_scraping:
+  # 请求间隔（秒）
+  min_delay: 2
+  max_delay: 5
+  
+  # 失败重试
+  max_retries: 3
+  retry_delay: 10
+  
+  # User-Agent 轮换
+  use_random_ua: true
+  
+  # 是否使用代理（可选）
+  use_proxy: false
+  proxy_pool: []
+
+  # 登录 Cookie（推荐）：浏览器登录知乎并完成验证后导出
+  # JSON 示例见 configs/zhihu.cookies.example.json
+  # 也可用: python3 helpers/fetch_zhihu.py <growth_id> --cookies configs/zhihu.cookies.json
+  cookies_file: null
+
+# Intent 过滤配置
+intent_filter:
+  # 最低相关度分数
+  min_relevance_score: 60
+  
+  # 只包含以下 intent 类型
+  include_intent_types:
+    - tool_recommendation
+    - comparison
+    - alternative_seeking
+    - how_to
+
+# 输出配置
+output:
+  # 保存原始 HTML（调试用）
+  save_raw_html: false
+  
+  # 详细日志
+  verbose: true

@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "zhihu_answer_draft.schema.json",
+  "title": "Zhihu Answer Draft",
+  "description": "G4 output: generated answer drafts for Zhihu questions",
+  "type": "object",
+  "required": [
+    "growth_id",
+    "created_at",
+    "product_title",
+    "zhihu_answers",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "growth_id": {
+      "type": "string",
+      "pattern": "^growth_(zhihu|reddit|hn|multi)_\\d{4}-\\d{2}-\\d{2}_\\d{3}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "product_title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "zhihu_answers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "answer_id",
+          "cluster_id",
+          "question_id",
+          "question_title",
+          "question_url",
+          "generated_answer",
+          "opportunity_score",
+          "publish_status"
+        ],
+        "properties": {
+          "answer_id": {
+            "type": "string",
+            "pattern": "^ans_\\d{3}$"
+          },
+          "cluster_id": {
+            "type": "string",
+            "description": "Which demand cluster this belongs to"
+          },
+          "platform": {
+            "const": "zhihu"
+          },
+          "question_id": {
+            "type": "string"
+          },
+          "question_title": {
+            "type": "string",
+            "minLength": 5
+          },
+          "question_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "question_detail": {
+            "type": "string",
+            "description": "Full question description"
+          },
+          "source_metadata": {
+            "type": "object",
+            "properties": {
+              "view_count": {
+                "type": "integer"
+              },
+              "follower_count": {
+                "type": "integer"
+              },
+              "answer_count": {
+                "type": "integer"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "latest_activity": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false
+          },
+          "generated_answer": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 200,
+                "maxLength": 5000,
+                "description": "Full answer text in Markdown"
+              },
+              "word_count": {
+                "type": "integer",
+                "minimum": 50
+              },
+              "structure": {
+                "type": "object",
+                "properties": {
+                  "intro": {
+                    "type": "boolean"
+                  },
+                  "product_comparison": {
+                    "type": "boolean"
+                  },
+                  "recommendation_logic": {
+                    "type": "boolean"
+                  },
+                  "call_to_action": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "tone": {
+                "type": "string",
+                "enum": [
+                  "professional_helpful",
+                  "casual_friendly",
+                  "expert_technical"
+                ]
+              },
+              "product_mention": {
+                "type": "object",
+                "properties": {
+                  "position": {
+                    "type": "string",
+                    "enum": ["first", "middle", "last", "none"]
+                  },
+                  "style": {
+                    "type": "string",
+                    "enum": ["comparative", "standalone", "mention_only"]
+                  },
+                  "prominence": {
+                    "type": "string",
+                    "enum": ["subtle", "balanced", "prominent"]
+                  },
+                  "includes_link": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "description": "How our product is mentioned"
+              },
+              "products_mentioned": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "All products mentioned (ours + competitors)"
+              }
+            },
+            "additionalProperties": false
+          },
+          "opportunity_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Overall opportunity score for this answer"
+          },
+          "signals": {
+            "type": "object",
+            "properties": {
+              "relevance": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "commercial_intent": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "competition_level": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "freshness": {
+                "type": "string",
+                "enum": ["hot", "active", "recent", "old"]
+              },
+              "engagement": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "estimated_impact": {
+                "type": "string",
+                "enum": ["low", "medium", "medium-high", "high"]
+              },
+              "competition_analysis": {
+                "type": "object",
+                "properties": {
+                  "existing_answers": {
+                    "type": "integer"
+                  },
+                  "top_answer_upvotes": {
+                    "type": "integer"
+                  },
+                  "avg_answer_length": {
+                    "type": "integer"
+                  },
+                  "product_mentions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "publish_recommendation": {
+                "type": "object",
+                "properties": {
+                  "should_publish": {
+                    "type": "boolean"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "urgent"]
+                  },
+                  "timing": {
+                    "type": "string",
+                    "enum": ["ASAP", "this_week", "this_month", "later"]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "publish_status": {
+            "type": "string",
+            "enum": ["pending", "approved", "published", "failed", "skipped"]
+          },
+          "published_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "published_url": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "URL of published answer"
+          },
+          "publish_metrics": {
+            "type": "object",
+            "properties": {
+              "upvotes": {
+                "type": "integer"
+              },
+              "comments": {
+                "type": "integer"
+              },
+              "views": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Metrics after publishing (Phase 2)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["total_answers", "by_priority"],
+      "properties": {
+        "total_answers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_priority": {
+          "type": "object",
+          "properties": {
+            "urgent": {
+              "type": "integer"
+            },
+            "high": {
+              "type": "integer"
+            },
+            "medium": {
+              "type": "integer"
+            },
+            "low": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "by_cluster": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Answer count per cluster"
+        },
+        "estimated_total_reach": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sum of all question view counts"
+        },
+        "avg_word_count": {
+          "type": "integer"
+        },
+        "generation_notes": {
+          "type": "string",
+          "description": "Any notes about the generation process"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
