@@ -361,6 +361,11 @@ def main():
         action='store_true',
         help='Only test whether Zhihu API is accessible, then exit',
     )
+    parser.add_argument(
+        '--skip-answer-check',
+        action='store_true',
+        help='Skip checking whether logged-in account already answered each question',
+    )
     args = parser.parse_args()
     
     # Load product context
@@ -408,6 +413,34 @@ def main():
         if qid not in seen:
             seen.add(qid)
             unique_questions.append(q)
+
+    # 3. Check whether logged-in account already answered (requires cookies)
+    if args.cookies and not args.skip_answer_check and unique_questions:
+        print(f"\n3. Checking my answer status ({len(unique_questions)} questions)...")
+        try:
+            from helpers.zhihu_answer_status import check_questions_answered
+        except ImportError:
+            from zhihu_answer_status import check_questions_answered
+
+        status_map = check_questions_answered(
+            [q['question_id'] for q in unique_questions],
+            session=fetcher.session,
+        )
+        answered_count = 0
+        for q in unique_questions:
+            q['existing_answer'] = status_map.get(q['question_id'], {
+                'answered': False,
+                'answer_id': None,
+                'url': None,
+                'checked_at': datetime.now().isoformat(),
+            })
+            if q['existing_answer'].get('answered'):
+                answered_count += 1
+        print(f"  ✓ Already answered: {answered_count}/{len(unique_questions)}")
+    elif not args.cookies:
+        print("\n3. Skipping answer status check (no --cookies)")
+    else:
+        print("\n3. Skipping answer status check (--skip-answer-check)")
     
     # Save raw output
     output_dir = Path(f"runs/{args.growth_id}/_raw")
@@ -423,6 +456,10 @@ def main():
         'questions': unique_questions,
         'source': 'zhihu_live',
     }
+    if unique_questions and unique_questions[0].get('existing_answer') is not None:
+        output_data['already_answered_count'] = sum(
+            1 for q in unique_questions if (q.get('existing_answer') or {}).get('answered')
+        )
     
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)

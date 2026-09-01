@@ -13,7 +13,7 @@ import argparse
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import jsonschema
 
@@ -71,11 +71,21 @@ def load_judgment(growth_id: str) -> Dict:
     return judgment
 
 
+def load_demand_signals(growth_id: str) -> Dict:
+    """Load G1 demand signals (optional, for existing_answer passthrough)."""
+    path = Path(f"runs/{growth_id}/g1_demand_signals.json")
+    if not path.exists():
+        return {'signals': []}
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
 def assemble_zhihu_answers(
     growth_id: str,
     opportunities: Dict,
     product_ctx: Dict,
-    judgment: Dict
+    judgment: Dict,
+    signals_data: Optional[Dict] = None,
 ) -> Dict:
     """
     Assemble Zhihu answer drafts from opportunities + AI judgment
@@ -94,11 +104,16 @@ def assemble_zhihu_answers(
                 'cluster_id': cluster_id,
                 'question_data': q,
             }
+
+    signal_map = {}
+    if signals_data:
+        signal_map = {s['platform_id']: s for s in signals_data.get('signals', [])}
     
     for answer in ai_answers:
         question_id = answer.get('question_id')
         q_info = question_map.get(question_id, {})
         q_data = q_info.get('question_data', {})
+        sig = signal_map.get(question_id, {})
         raw_signals = q_data.get('signals', {})
         source_metadata = {
             k: raw_signals[k]
@@ -123,6 +138,9 @@ def assemble_zhihu_answers(
             'published_at': None,
             'published_url': None,
         }
+        existing = answer.get('existing_answer') or sig.get('existing_answer')
+        if existing:
+            enriched['existing_answer'] = existing
         
         enriched_answers.append(enriched)
     
@@ -208,11 +226,13 @@ def main():
     
     # Assemble answer drafts
     print("Assembling Zhihu answer drafts...")
+    signals_data = load_demand_signals(args.growth_id)
     answer_drafts = assemble_zhihu_answers(
         args.growth_id,
         opportunities,
         product_ctx,
-        judgment
+        judgment,
+        signals_data,
     )
     
     # Validate against schema

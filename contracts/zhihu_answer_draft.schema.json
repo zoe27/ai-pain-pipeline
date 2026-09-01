@@ -246,6 +246,27 @@
             },
             "additionalProperties": false
           },
+          "existing_answer": {
+            "type": "object",
+            "description": "Whether the logged-in Zhihu account already answered this question (checked via Cookie)",
+            "properties": {
+              "answered": {
+                "type": "boolean"
+              },
+              "answer_id": {
+                "type": ["string", "null"]
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri"
+              },
+              "checked_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false
+          },
           "publish_status": {
             "type": "string",
             "enum": ["pending", "approved", "published", "failed", "skipped"]

@@ -157,6 +157,30 @@
             "type": "string",
             "enum": ["zh", "en", "other"],
             "description": "Content language"
+          },
+          "existing_answer": {
+            "type": "object",
+            "description": "Whether logged-in Zhihu account already answered (from fetch or review check)",
+            "properties": {
+              "answered": {
+                "type": "boolean"
+              },
+              "answer_id": {
+                "type": ["string", "null"]
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri"
+              },
+              "checked_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "error": {
+                "type": ["string", "null"]
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
@@ -199,6 +223,11 @@
             "enum": ["zhihu", "reddit", "hackernews", "quora", "twitter"]
           },
           "description": "Which platforms were actually scanned"
+        },
+        "already_answered_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Signals where logged-in Zhihu account already answered"
         }
       },
       "additionalProperties": false

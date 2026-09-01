@@ -18,6 +18,7 @@ import webbrowser
 import threading
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 
 import requests
 from flask import Flask, jsonify, request, Response
@@ -74,6 +75,29 @@ class ZhihuPublisher:
         except Exception as e:
             return {"success": False, "answer_id": None, "url": None, "error": str(e)}
 
+
+class ZhihuAnswerChecker:
+    """Detect whether the logged-in account already answered a question."""
+
+    def __init__(self, cookies: dict):
+        self.session = requests.Session()
+        for name, value in cookies.items():
+            if value is not None:
+                self.session.cookies.set(str(name), str(value), domain=".zhihu.com")
+        try:
+            from helpers.zhihu_answer_status import make_session, check_question_answered, check_questions_answered
+        except ImportError:
+            from zhihu_answer_status import make_session, check_question_answered, check_questions_answered
+        self._check_question = check_question_answered
+        self._check_questions = check_questions_answered
+        make_session(session=self.session)
+
+    def check_question(self, question_id: str) -> dict:
+        return self._check_question(self.session, question_id)
+
+    def check_questions(self, question_ids: List[str]) -> Dict[str, dict]:
+        return self._check_questions(question_ids, session=self.session)
+
 # ---------------------------------------------------------------------------
 # Data helpers
 # ---------------------------------------------------------------------------
@@ -124,6 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Helv
 .badge-medium{background:#e0f2fe;color:#0369a1}
 .badge-low{background:#f3f4f6;color:#6b7280}
 .badge-published{background:#dcfce7;color:#166534}
+.badge-answered{background:#ffedd5;color:#c2410c}
 .badge-failed{background:#fecaca;color:#991b1b}
 .badge-pending,.badge-skipped{background:#f3f4f6;color:#374151}
 .layout{display:flex;min-height:calc(100vh - 57px)}
@@ -187,19 +212,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Helv
 <script>
 let answers = [];
 let currentIdx = 0;
+let checkingAnswered = false;
+
+function isAlreadyAnswered(a) {
+  return !!(a.existing_answer && a.existing_answer.answered);
+}
+
+function displayStatus(a) {
+  if (a.publish_status === 'published') return 'published';
+  if (a.publish_status === 'skipped') return 'skipped';
+  if (a.publish_status === 'failed') return 'failed';
+  if (isAlreadyAnswered(a)) return 'answered';
+  return a.publish_status || 'pending';
+}
+
+function statusLabel(status) {
+  const labels = {
+    pending: '待发布',
+    published: '已发布',
+    skipped: '已跳过',
+    failed: '失败',
+    answered: '已在知乎回答',
+  };
+  return labels[status] || status;
+}
 
 // ── load data ──────────────────────────────────────────────────────────────
 async function init() {
+  document.getElementById('topbar-meta').textContent = '加载草稿...';
   const resp = await fetch('/api/answers');
   const data = await resp.json();
   answers = data.zhihu_answers || [];
 
   document.getElementById('topbar-meta').textContent =
+    data.growth_id + ' · ' + answers.length + ' 条草稿 · ' + data.product_title + ' · 检测知乎回答状态中...';
+
+  await refreshAnsweredStatus();
+
+  document.getElementById('topbar-meta').textContent =
     data.growth_id + ' · ' + answers.length + ' 条草稿 · ' + data.product_title;
 
+  document.getElementById('main').innerHTML = '';
   renderSidebar();
   renderStats(answers);
-  if (answers.length > 0) renderCard(0);
+  if (answers.length > 0) renderCard(currentIdx);
+}
+
+async function refreshAnsweredStatus() {
+  if (checkingAnswered) return;
+  checkingAnswered = true;
+  try {
+    const resp = await fetch('/api/check-answered', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      answers = data.zhihu_answers || answers;
+    }
+  } catch (e) {
+    console.warn('check-answered failed', e);
+  } finally {
+    checkingAnswered = false;
+  }
 }
 
 // ── sidebar ────────────────────────────────────────────────────────────────
@@ -210,14 +282,14 @@ function renderSidebar() {
     const score = a.opportunity_score || 0;
     const dotCls = score >= 90 ? '' : score >= 75 ? 'mid' : 'low';
     const pri = a.metadata?.publish_recommendation?.priority || 'medium';
-    const status = a.publish_status || 'pending';
+    const status = displayStatus(a);
     return `<div class="sidebar-item${i === 0 ? ' active' : ''}" data-idx="${i}">
       <div class="q-title">${escHtml(a.question_title)}</div>
       <div class="q-meta">
         <span class="score-dot ${dotCls}"></span>
         <span>Score ${score}</span>
         <span class="badge badge-${pri}">${pri}</span>
-        <span class="badge badge-${status}" id="sb-status-${i}">${status}</span>
+        <span class="badge badge-${status}" id="sb-status-${i}">${statusLabel(status)}</span>
       </div>
     </div>`;
   }).join('');
@@ -235,15 +307,32 @@ function renderSidebar() {
 
 // ── stats bar ──────────────────────────────────────────────────────────────
 function renderStats(list) {
-  const counts = {pending:0, published:0, failed:0, skipped:0};
-  list.forEach(a => { const s = a.publish_status || 'pending'; counts[s] = (counts[s]||0)+1; });
+  const counts = {pending:0, published:0, failed:0, skipped:0, answered:0};
+  list.forEach(a => {
+    const s = displayStatus(a);
+    counts[s] = (counts[s]||0)+1;
+  });
+  const existing = document.getElementById('stat-row');
+  if (existing) existing.remove();
   document.getElementById('main').insertAdjacentHTML('afterbegin', `
     <div class="stat-row" id="stat-row">
       <div class="stat-box"><div class="num">${list.length}</div><div class="lbl">总草稿</div></div>
       <div class="stat-box"><div class="num">${counts.pending}</div><div class="lbl">待发布</div></div>
-      <div class="stat-box"><div class="num" style="color:#16a34a">${counts.published}</div><div class="lbl">已发布</div></div>
+      <div class="stat-box"><div class="num" style="color:#ea580c">${counts.answered}</div><div class="lbl">已在知乎回答</div></div>
+      <div class="stat-box"><div class="num" style="color:#16a34a">${counts.published}</div><div class="lbl">本工具发布</div></div>
       <div class="stat-box"><div class="num" style="color:#b91c1c">${counts.failed}</div><div class="lbl">失败</div></div>
+      <div class="stat-box"><button class="btn btn-skip" id="recheck-btn" style="margin-top:6px">🔄 重新检测</button></div>
     </div>`);
+  document.getElementById('recheck-btn').addEventListener('click', async () => {
+    document.getElementById('recheck-btn').disabled = true;
+    document.getElementById('recheck-btn').textContent = '检测中...';
+    await refreshAnsweredStatus();
+    renderSidebar();
+    renderStats(answers);
+    renderCard(currentIdx);
+    document.getElementById('recheck-btn').disabled = false;
+    document.getElementById('recheck-btn').textContent = '🔄 重新检测';
+  });
 }
 
 // ── card ───────────────────────────────────────────────────────────────────
@@ -253,13 +342,18 @@ function renderCard(idx) {
   const notes = a.metadata?.publish_recommendation?.notes || '';
   const text = a.generated_answer?.text || '';
   const wc = a.generated_answer?.word_count || text.length;
-  const status = a.publish_status || 'pending';
+  const status = displayStatus(a);
   const srcMeta = a.source_metadata || {};
+  const existing = a.existing_answer || {};
 
   let actionHtml = '';
   if (status === 'published') {
-    actionHtml = `<span class="badge badge-published" style="font-size:13px;padding:6px 14px">✓ 已发布</span>
+    actionHtml = `<span class="badge badge-published" style="font-size:13px;padding:6px 14px">✓ 本工具已发布</span>
       ${a.published_url ? `<a class="btn-link" href="${escAttr(a.published_url)}" target="_blank">查看已发布回答 →</a>` : ''}`;
+  } else if (status === 'answered') {
+    actionHtml = `<span class="badge badge-answered" style="font-size:13px;padding:6px 14px">✓ 已在知乎回答</span>
+      ${existing.url ? `<a class="btn-link" href="${escAttr(existing.url)}" target="_blank">查看已有回答 →</a>` : ''}
+      <button class="btn btn-skip" id="skip-btn">标记跳过</button>`;
   } else {
     actionHtml = `
       <button class="btn btn-primary" id="pub-btn">🚀 发布到知乎</button>
@@ -279,8 +373,10 @@ function renderCard(idx) {
         <span>📎 <a href="${escAttr(a.question_url)}" target="_blank" style="color:#2563eb">在知乎查看原帖 →</a></span>
         ${srcMeta.view_count ? `<span>👁 ${srcMeta.view_count} 浏览</span>` : ''}
         ${srcMeta.answer_count ? `<span>💬 ${srcMeta.answer_count} 回答</span>` : ''}
+        ${existing.checked_at ? `<span>🔍 检测于 ${escHtml(existing.checked_at.slice(0, 19).replace('T', ' '))}</span>` : ''}
         <span>🏷 ${escHtml(a.cluster_id || '')}</span>
       </div>
+      ${status === 'answered' ? `<p style="margin-top:10px;font-size:13px;color:#c2410c;background:#fff7ed;padding:10px 12px;border-radius:8px">该问题下你的知乎账号已有回答，无需重复发布。可点击查看已有回答，或编辑草稿后手动更新。</p>` : ''}
     </div>
 
     <div class="card" id="draft-card">
@@ -326,8 +422,10 @@ function renderCard(idx) {
     document.getElementById('preview-content').innerHTML =
       renderMarkdown(document.getElementById('editor').value);
   });
-  if (status !== 'published') {
+  if (status !== 'published' && status !== 'answered') {
     document.getElementById('pub-btn').addEventListener('click', () => publishAnswer(idx, a.answer_id, a.question_id));
+    document.getElementById('skip-btn').addEventListener('click', () => skipAnswer(idx, a.answer_id));
+  } else if (status === 'answered') {
     document.getElementById('skip-btn').addEventListener('click', () => skipAnswer(idx, a.answer_id));
   }
 }
@@ -380,7 +478,7 @@ async function skipAnswer(idx, answerId) {
 
 function updateSidebarStatus(idx, status) {
   const el = document.getElementById('sb-status-' + idx);
-  if (el) { el.className = 'badge badge-' + status; el.textContent = status; }
+  if (el) { el.className = 'badge badge-' + status; el.textContent = statusLabel(status); }
 }
 
 function showStatus(type, msg) {
@@ -426,6 +524,42 @@ def index():
 @app.route("/api/answers")
 def api_answers():
     return jsonify(load_answers())
+
+@app.route("/api/check-answered", methods=["POST"])
+def api_check_answered():
+    cookies = load_cookies()
+    if not cookies:
+        return jsonify({
+            "success": False,
+            "error": "未找到 Cookie 文件，无法检测知乎回答状态",
+        }), 400
+
+    data = load_answers()
+    pending = [
+        a for a in data["zhihu_answers"]
+        if a.get("publish_status") not in ("published", "skipped")
+    ]
+    question_ids = [a["question_id"] for a in pending]
+
+    checker = ZhihuAnswerChecker(cookies)
+    results = checker.check_questions(question_ids)
+
+    answered_count = 0
+    for answer in data["zhihu_answers"]:
+        qid = answer["question_id"]
+        if qid not in results:
+            continue
+        answer["existing_answer"] = results[qid]
+        if results[qid].get("answered"):
+            answered_count += 1
+
+    save_answers(data)
+    return jsonify({
+        "success": True,
+        "checked": len(question_ids),
+        "already_answered": answered_count,
+        "zhihu_answers": data["zhihu_answers"],
+    })
 
 @app.route("/api/publish", methods=["POST"])
 def api_publish():

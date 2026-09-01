@@ -113,14 +113,19 @@ def assemble_demand_signals(growth_id: str, raw_data: Dict, judgment: Dict) -> D
             'reasoning': filtered.get('reasoning', ''),
             'language': 'zh',  # Zhihu is Chinese
         }
+        if raw_q.get('existing_answer'):
+            signal['existing_answer'] = raw_q['existing_answer']
         
         signals.append(signal)
     
     # Count by platform
     by_platform = {}
+    already_answered = 0
     for sig in signals:
         platform = sig['platform']
         by_platform[platform] = by_platform.get(platform, 0) + 1
+        if (sig.get('existing_answer') or {}).get('answered'):
+            already_answered += 1
     
     # Assemble output
     output = {
@@ -134,6 +139,7 @@ def assemble_demand_signals(growth_id: str, raw_data: Dict, judgment: Dict) -> D
             'keywords_searched': raw_data.get('keywords_searched', []),
             'date_range': '90_days',  # From config
             'platforms_used': list(set(s['platform'] for s in signals)),
+            'already_answered_count': already_answered,
         }
     }
     
