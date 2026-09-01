@@ -1,10 +1,11 @@
-name: Daily Pain Radar
+name: Pain Radar (Manual)
 
-# 每天 UTC 02:00 (北京时间 10:00) 自动运行 Stage 1
+# 暂不设 cron；需要时在 GitHub Actions 页手动 workflow_dispatch 触发。
+# 日后启用定时：取消下方 schedule 注释。
 on:
-  schedule:
-    - cron: '0 2 * * *'  # 每天 02:00 UTC
-  workflow_dispatch:  # 也可以手动触发
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 2 * * *'  # 每天 02:00 UTC（北京时间 10:00）
 
 jobs:
   pain-radar:

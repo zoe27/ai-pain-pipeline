@@ -13,3 +13,6 @@ runs/
 !.claude/skills/
 !.claude/skills/**
 __pycache__/
+
+# 个人 IDE 配置（无团队共享 settings 时不纳入版本库）
+.vscode/

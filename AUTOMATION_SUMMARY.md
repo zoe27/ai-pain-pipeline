@@ -38,10 +38,10 @@
   python3 decision_dashboard.py --port 8080
   ```
 
-### 3️⃣ **定时调度** — GitHub Actions
+### 3️⃣ **GitHub Actions（手动触发）**
 - **文件**: `.github/workflows/daily-pain-radar.yml`
-- **功能**: 每天 10:00 自动抓取痛点
-- **通知**: Slack webhook
+- **功能**: 在 Actions 页手动运行 Stage 1 抓取（**暂不设 cron 定时**）
+- **通知**: Slack webhook（可选）
 - **配置**: 需要设置 GitHub Secrets
   - `PRODUCTHUNT_TOKEN`
   - `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`

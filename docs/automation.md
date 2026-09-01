@@ -53,9 +53,9 @@ python3 pipeline_orchestrator.py run
 python3 pipeline_orchestrator.py run --pipeline-id pipe_2026-06-15_001
 ```
 
-#### 方式 B: 定时自动启动（GitHub Actions）
+#### 方式 B: GitHub Actions 手动触发
 
-配置 `.github/workflows/daily-pain-radar.yml`，每天自动运行。
+`.github/workflows/daily-pain-radar.yml` 已就绪，在 Actions 页 **Run workflow** 即可（**暂不设 cron**；日后可取消 workflow 内 schedule 注释启用定时）。
 
 需要在 GitHub Secrets 中配置：
 - `PRODUCTHUNT_TOKEN`
@@ -232,17 +232,16 @@ python3 decision_dashboard.py --port 8080
 
 ---
 
-## 📅 定时调度（GitHub Actions）
+## 📅 GitHub Actions（手动触发）
 
 ### 配置文件
 
-`.github/workflows/daily-pain-radar.yml` 已配置好，会：
+`.github/workflows/daily-pain-radar.yml` 当前为 **workflow_dispatch 手动触发**（cron 已注释，暂不每日自动跑）。运行时会：
 
-1. **每天 UTC 02:00** (北京时间 10:00) 自动运行
-2. 生成新的 `pipeline_id`
-3. 运行 `fetch_radar.py` 抓取痛点
-4. 上传数据到 Artifact
-5. 发送 Slack 通知
+1. 生成新的 `pipeline_id`
+2. 运行 `fetch_radar.py` 抓取痛点
+3. 上传数据到 Artifact
+4. 发送 Slack 通知（配置了 webhook 时）
 
 ### 需要配置的 Secrets
 
