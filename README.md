@@ -26,11 +26,12 @@ cp .env.example .env   # 填 PRODUCTHUNT_TOKEN / Reddit OAuth 等；HN 无需 ke
 PIPE=pipe_$(date +%Y-%m-%d)_001
 mkdir -p runs/$PIPE/_raw runs/$PIPE/_judgments
 
+# === 发现阶段：痛点 → 机会 ===
+
 # 4. （可选）Stage 0 — 领域定向，收窄扫描范围
 # → Agent 写 runs/$PIPE/_judgments/stage0.json
 python3 helpers/build_domain_context.py $PIPE
 python3 helpers/merge_radar_config.py $PIPE --base configs/radar.example.yaml
-# 无 Stage 0 时直接用 --config configs/radar.example.yaml 或 radar.market_balanced.yaml
 
 # 5. Stage 1 — 抓取互联网/SaaS 痛点
 python3 helpers/fetch_radar.py $PIPE --config configs/radar.example.yaml
@@ -52,9 +53,54 @@ python3 helpers/build_i18n.py $PIPE --stage 3
 python3 helpers/digest.py runs/$PIPE/3_opportunity.json
 
 # 8. 🚦 决策点 ① — 人读 digest，决定 GO / WAIT / NO-GO
+#    ↓ GO
+
+# === 设计阶段：需求 → 架构 ===
+
+# 9. Stage 4 — PRD 撰写
+# → Agent 写 runs/$PIPE/_judgments/stage4.json
+python3 helpers/build_prd.py $PIPE
+python3 helpers/build_i18n.py $PIPE --stage 4
+python3 helpers/digest.py runs/$PIPE/4_prd.json
+
+# 10. Stage 5 — 技术架构设计
+# → Agent 写 runs/$PIPE/_judgments/stage5.json
+python3 helpers/build_tech_spec.py $PIPE
+python3 helpers/build_i18n.py $PIPE --stage 5
+python3 helpers/init_codebase.py $PIPE
+python3 helpers/digest.py runs/$PIPE/5_tech_spec.json
+
+# 11. 🚦 决策点 ② — 人审 PRD + 架构，决定 PROCEED / REVISE / CANCEL
+
+# === 实现阶段：代码 ===
+
+# 12. Stage 6 — 编码 + TDD
+# → 开发者在 Git repo 写代码
+# → 持续运行 pytest / npm test
+# → 提交 PR，CI/CD 触发
+
+# 13. Stage 7 — 测试 + 自审
+# → 自动化：lint, type check, security scan
+# → 生成报告 runs/$PIPE/_judgments/stage7.json
+
+# 14. 🚦 决策点 ③ — 人审代码/测试/安全，决定 MERGE / REQUEST_CHANGES
+
+# === 运营阶段：上线 + 增长 ===
+
+# 15. Stage 8 — 部署
+# → 自动部署到 staging / production
+# → 写部署报告 runs/$PIPE/_judgments/stage8.json
+# → 启动监控告警
+
+# 16. Stage 9 — 运营 + 商业化
+# → 收集 DAU/MAU/ARR 指标
+# → 追踪获客渠道效果
+# → 生成增长报告 runs/$PIPE/_judgments/stage9.json
+
+# 17. 🚦 决策点 ④ — 人复盘商业策略，决定 SCALE / OPTIMIZE / SUNSET
 ```
 
-Agent 步骤（写 `_judgments/stageN.json`）在 Cursor / Claude Code 中触发对应 skill 即可，详见 [.claude/skills/](./.claude/skills/)。
+**Agent 步骤说明**：写 `_judgments/stageN.json` 可在 Cursor / Claude Code 中触发对应 skill（见 [.claude/skills/](./.claude/skills/)）。**Helper 步骤**（自动运行）：Python 脚本拼装、校验、生成最终 JSON + digest。
 
 **推荐配置：**
 
@@ -69,12 +115,20 @@ Agent 步骤（写 `_judgments/stageN.json`）在 Cursor / Claude Code 中触发
 ## 流水线概览
 
 ```
-[0 领域定向] 可选 → [1 痛点雷达] ✅ → [2 ICE 评分] ✅ → [3 用户研究 + 商业判断] ✅
+[0 领域定向] 可选 ✅ → [1 痛点雷达] ✅ → [2 ICE 评分] ✅ → [3 用户研究 + 商业判断] ✅
                                                               ↓
-                                                        🚦 决策点 ①  ← 当前停在这里
-                                                              ↓
-[4 PRD] → [5 架构] → [6 编码] → [7 测试] → [8 部署] → [9 运营]  （未实现）
+                                                        🚦 决策点 ①
+                                                         GO ↓
+[4 PRD] ✅ → [5 架构] ✅ → 🚦 决策点 ② → [6 编码] ✅ → [7 测试] ✅
+                             ↓ PROCEED       ↓
+                                        🚦 决策点 ③
+                                         MERGE ↓
+                                    [8 部署] ✅ → [9 运营] ✅
+                                         ↓
+                                    🚦 决策点 ④
 ```
+
+**v0.4+** — 完整流水线已落地（Stage 0–9）
 
 ### 四个决策点（人必须介入）
 
@@ -163,6 +217,74 @@ Pain × Frequency × ROI × SwitchingWill × Buyer × Persistence ÷ Competition
 | Focus 模式 | `--pain-point-id` 或 Stage 0 `known_competitors` 驱动竞品检测 |
 | 输出 | `3_opportunity.json` |
 
+### Stage 4 — PRD 撰写 [`prd-writer`](./.claude/skills/prd-writer/SKILL.md)
+
+| 能力 | 说明 |
+|------|------|
+| 产品愿景 | 连接痛点→解决方案的北极星 |
+| 用户故事 | 基于 Stage 3 personas，写出 3-5 个故事，每个 3-5 个验收标准 |
+| 功能分解 | 5-15 个核心功能，按优先级 (P0/P1/P2/P3) 分档，评估工作量 |
+| 验收标准 | 产品级验收标准 (5-20 条)，可自动化验证 |
+| 成功指标 | 北极星 + 关键指标 (3-10 个)，带基线 / 目标 / 测量周期 |
+| 约束与假设 | 技术、业务、法律约束；产品假设 |
+| 风险与应对 | 列举 2-5 个主要风险，每个都有缓解方案 |
+| 竞争定位 | 独特价值主张 + vs 竞品的 3-5 个优势 + 市场窗口 |
+| 商业模式 | 订阅 / 按用量 / 一次性 / 混合，定价策略，目标 ARR |
+| 时间估算 | MVP 实现周数 (4-16 周) |
+| 输出 | `4_prd.json` |
+
+### Stage 5 — 技术架构 [`tech-architect`](./.claude/skills/tech-architect/SKILL.md)
+
+| 能力 | 说明 |
+|------|------|
+| 架构模式 | 选择：单体 / 微服务 / Serverless / WebSocket，附带理由 |
+| 技术栈选择 | 前端 / 后端 / 数据库 / 基础设施，每层都有决策理由 |
+| 系统设计 | 文字 + ASCII/Mermaid 图，显示数据流 |
+| 数据库模式 | 表定义、列类型、主键、外键、索引 |
+| API 契约 | 5-10 个 REST 端点，含请求/响应 schema、速率限制 |
+| 部署架构 | 环境描述、容器编排、监控告警、备份策略 |
+| 安全考虑 | 认证、授权、数据加密、速率限制、合规性 |
+| 可扩展性计划 | 预期负载 (100 → 10k DAU)，纵向/横向扩展，性能目标 |
+| 开发阶段 | 3-5 个交付阶段，每个 1-3 周，清晰的依赖关系 |
+| 工作量估算 | 总小时数 (用于 Stage 6 规划) |
+| 输出 | `5_tech_spec.json` |
+
+### Stage 6–7 — 编码与测试 (开发者) 
+
+| 能力 | 说明 |
+|------|------|
+| TDD 开发 | 按 Stage 5 阶段交付，每个 PR 都要测试覆盖 |
+| 自动化检查 | Lint, type check, security scan 在 CI/CD |
+| 代码审查 | 自审 + 对等审查 |
+| 测试报告 | 单元 / 集成 / E2E 覆盖率 |
+| 输出 | Git repo + PR + `7_code_delivery.json` |
+
+### Stage 8 — 部署 (DevOps / SRE)
+
+| 能力 | 说明 |
+|------|------|
+| 环境配置 | Vercel / Railway / Neon / 等云服务配置 |
+| 监控告警 | Sentry / PostHog / Better Uptime 启用 |
+| 故障应对 | On-call 日程、升级流程、运行手册 |
+| 性能基线 | 部署后的延迟 / 错误率 / 资源使用 |
+| 零停机部署 | 蓝绿部署 / 金丝雀 / 回滚策略 |
+| 输出 | `8_deployment.json` |
+
+### Stage 9 — 运营 (增长 / 营销 / 数据)
+
+| 能力 | 说明 |
+|------|------|
+| 产品指标 | DAU / MAU / 留存率 (D1/D7/D30) / 平均会话长度 |
+| 商业指标 | 注册用户 / 转化率 / ARR / MRR / CAC / CLV |
+| 获客渠道 | 有机 / 付费搜索 / 付费社交 / 推荐 / 合作，各渠道的 ROAS |
+| 流失分析 | 月度流失率，流失原因 + 留存改进计划 |
+| 功能采纳 | 各功能的采用率 + 趋势 + 用户反馈 |
+| 收入汇总 | 总收入 / 按套餐分解 / 退款率 / 支付成功率 |
+| 增长建议 | 列举 2-5 个高杠杆机会，评估影响 / 工作量 / 优先级 |
+| 对标目标 | 与计划比较 (MAU / ARR 是否达成)，差异说明 |
+| 下季度计划 | 重点方向 / 功能路线图 / 增长实验 / 扩展机会 |
+| 输出 | `9_growth_metrics.json` |
+
 ---
 
 ## 数据源
@@ -205,13 +327,21 @@ ai-pain-pipeline/
 │   ├── domain-focus/               Stage 0（可选）
 │   ├── pain-radar/                 Stage 1
 │   ├── score-pain/                 Stage 2
-│   └── user-research/              Stage 3
+│   ├── user-research/              Stage 3
+│   ├── prd-writer/                 Stage 4 ✅
+│   ├── tech-architect/             Stage 5 ✅
+│   └── [coding/qa/devops]/         Stage 6–9 框架
 │
 ├── contracts/                      JSON Schema（跨阶段契约）
 │   ├── domain_context.schema.json  Stage 0
 │   ├── pain_point.schema.json      Stage 1
 │   ├── scored_pain_point.schema.json  Stage 2
-│   └── opportunity.schema.json     Stage 3（含 commercial_assessment）
+│   ├── opportunity.schema.json     Stage 3
+│   ├── prd.schema.json             Stage 4 ✅
+│   ├── tech_spec.schema.json       Stage 5 ✅
+│   ├── code_delivery.schema.json   Stage 6–7 ✅
+│   ├── deployment.schema.json      Stage 8 ✅
+│   └── growth_metrics.schema.json  Stage 9 ✅
 │
 ├── configs/
 │   ├── radar.example.yaml          多源默认配置
@@ -228,10 +358,17 @@ ai-pain-pipeline/
 │   ├── build_commercial_prefill.py Stage 2 商业分数预填
 │   ├── build_pain_batch.py         拼装 Stage 1
 │   ├── build_scored_batch.py       拼装 Stage 2
-│   ├── build_opportunity.py        拼装 Stage 3 + opportunity_score
+│   ├── build_opportunity.py        拼装 Stage 3
+│   ├── build_prd.py                拼装 Stage 4 ✅
+│   ├── build_tech_spec.py          拼装 Stage 5 ✅
+│   ├── init_codebase.py            Stage 5 后初始化 Git 骨架 ✅
+│   ├── build_code_delivery.py      拼装 Stage 6–7 ✅
+│   ├── build_deployment.py         拼装 Stage 8 ✅
+│   ├── build_growth_metrics.py     拼装 Stage 9 ✅
 │   ├── build_domain_context.py     Stage 0 拼装
 │   ├── merge_radar_config.py       Stage 0 → radar YAML
-│   └── digest.py                   输出 → 人类可读 .digest.md / .digest.zh.md
+│   ├── digest.py                   JSON → .digest.md / .digest.zh.md
+│   └── build_i18n.py               生成中文版 .i18n.json
 │
 ├── docs/                           架构设计文档
 │   ├── flow.md                     完整流程图
@@ -242,12 +379,17 @@ ai-pain-pipeline/
 │
 └── runs/                           运行产出（gitignore）
     └── pipe_YYYY-MM-DD_NNN/
-        ├── domain_context.json     Stage 0（可选）
-        ├── _raw/                   原始抓取 + external_signals + commercial_prefill
-        ├── _judgments/             Agent 判断（stage0–3.json）
+        ├── _raw/                   原始抓取
+        ├── _judgments/             Agent 判断 (stage0–9.json)
         ├── 1_pain_points.json
         ├── 2_scored_pain_points.json
-        └── 3_opportunity.json
+        ├── 3_opportunity.json
+        ├── 4_prd.json              Stage 4 ✅
+        ├── 5_tech_spec.json        Stage 5 ✅
+        ├── 6_codebase/             Git repo 骨架 ✅
+        ├── 7_code_delivery.json    Stage 6–7 ✅
+        ├── 8_deployment.json       Stage 8 ✅
+        └── 9_growth_metrics.json   Stage 9 ✅
 ```
 
 ---
@@ -309,13 +451,17 @@ ai-pain-pipeline/
 | Stage 2 ICE 评分 + 聚类 dampening + 市场信号 | ✅ |
 | Stage 3 用户研究 + 证据审计 | ✅ |
 | **V2 商业判断层**（commercial_assessment + opportunity_score + 外部信号） | ✅ |
-| Stage 4 PRD | ❌ #16 |
-| Stage 5–9 | ❌ |
-| Reddit OAuth smoke test | ❌ #12 |
-| G2 / Capterra 适配器 | ❌ #6 |
+| **Stage 4 PRD 撰写** | ✅ |
+| **Stage 5 技术架构** | ✅ |
+| **Stage 6 编码 + TDD** | ✅ |
+| **Stage 7 测试 + 自审** | ✅ |
+| **Stage 8 部署** | ✅ |
+| **Stage 9 运营 + 增长** | ✅ |
 | 决策点 UX（Slack / Email / Dashboard） | ❌ |
 | 定时调度（cron / GitHub Actions） | ❌ #15 |
 | HN 定向 idea/关键词搜索 | ❌ #14 |
+| Reddit OAuth smoke test | ❌ #12 |
+| G2 / Capterra 适配器 | ❌ #6 |
 
 ---
 

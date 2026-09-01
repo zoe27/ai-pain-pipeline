@@ -1,0 +1,130 @@
+#!/bin/bash
+# 自动化 Pipeline 演示脚本
+# 展示从痛点到产品的完整自动化流程
+
+set -e
+
+echo "═══════════════════════════════════════════════════════════"
+echo "🚀 AI Pain Pipeline 自动化演示"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+
+# 检查依赖
+echo "📦 检查依赖..."
+pip install -q -r requirements.txt
+echo "✅ 依赖已安装"
+echo ""
+
+# 生成 pipeline ID
+PIPE_ID="pipe_$(date +%Y-%m-%d)_demo"
+echo "🆔 Pipeline ID: $PIPE_ID"
+echo ""
+
+# 创建目录
+mkdir -p runs/$PIPE_ID/{_raw,_judgments}
+
+echo "═══════════════════════════════════════════════════════════"
+echo "🎯 启动方式 1: Pipeline Orchestrator (推荐)"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "自动运行整个 pipeline，在决策点停止等待审批："
+echo ""
+echo "  python3 pipeline_orchestrator.py run --pipeline-id $PIPE_ID"
+echo ""
+echo "特点："
+echo "  ✅ 自动运行所有 stage"
+echo "  ✅ 在 4 个决策点暂停"
+echo "  ✅ 状态持久化 (_state.json)"
+echo "  ✅ 失败自动记录"
+echo ""
+
+echo "═══════════════════════════════════════════════════════════"
+echo "🌐 启动方式 2: Decision Dashboard (可视化)"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "Web 界面查看和审批 pipeline："
+echo ""
+echo "  # 终端 1: 启动 Dashboard"
+echo "  python3 decision_dashboard.py --port 8080"
+echo ""
+echo "  # 终端 2: 运行 Pipeline"
+echo "  python3 pipeline_orchestrator.py run --pipeline-id $PIPE_ID"
+echo ""
+echo "  # 浏览器访问"
+echo "  open http://localhost:8080"
+echo ""
+echo "特点："
+echo "  ✅ 可视化进度条"
+echo "  ✅ 一键审批按钮"
+echo "  ✅ Digest 预览"
+echo "  ✅ 多 pipeline 管理"
+echo ""
+
+echo "═══════════════════════════════════════════════════════════"
+echo "⏰ 启动方式 3: 定时自动 (GitHub Actions)"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "每天自动运行，无需人工触发："
+echo ""
+echo "  1. 推送 .github/workflows/daily-pain-radar.yml 到 GitHub"
+echo "  2. 配置 Secrets (PRODUCTHUNT_TOKEN, SLACK_WEBHOOK_URL 等)"
+echo "  3. 每天 10:00 自动运行"
+echo "  4. Slack 通知"
+echo ""
+echo "特点："
+echo "  ✅ 完全自动化"
+echo "  ✅ 无需本地运行"
+echo "  ✅ Slack 通知"
+echo "  ✅ Artifact 存储"
+echo ""
+
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 手动运行示例 (使用当前 pipeline)"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+
+# 如果已有示例数据，演示审批
+if [ -f "runs/pipe_2026-06-07_001/3_opportunity.json" ]; then
+    echo "发现已有 pipeline: pipe_2026-06-07_001"
+    echo ""
+    echo "演示审批决策点 ①："
+    echo ""
+    echo "  python3 pipeline_orchestrator.py approve \\"
+    echo "    --pipeline-id pipe_2026-06-07_001 \\"
+    echo "    --decision-point 1 \\"
+    echo "    --decision GO"
+    echo ""
+    
+    echo "查看状态："
+    echo ""
+    echo "  python3 pipeline_orchestrator.py status \\"
+    echo "    --pipeline-id pipe_2026-06-07_001"
+    echo ""
+fi
+
+echo "═══════════════════════════════════════════════════════════"
+echo "📖 完整文档"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "  • 自动化指南:      docs/automation.md"
+echo "  • Stage 4-9 概览:  docs/stage-4-9-overview.md"
+echo "  • 快速上手:        STAGE_4_9_QUICK_START.md"
+echo "  • 项目总览:        README.md"
+echo ""
+
+echo "═══════════════════════════════════════════════════════════"
+echo "🎬 现在开始"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "选择一种方式开始："
+echo ""
+echo "  [1] 启动 Orchestrator (交互式)"
+echo "      python3 pipeline_orchestrator.py run"
+echo ""
+echo "  [2] 启动 Dashboard (可视化)"
+echo "      python3 decision_dashboard.py --port 8080"
+echo ""
+echo "  [3] 阅读文档"
+echo "      cat docs/automation.md"
+echo ""
+echo "═══════════════════════════════════════════════════════════"
