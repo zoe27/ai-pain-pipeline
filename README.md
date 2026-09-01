@@ -4,6 +4,8 @@
 
 一条由 **AI Agent 执行 + 人类在关键节点拍板** 的流水线，把公开社区里的用户抱怨，结构化为可评估、可研究、可进入 PRD 的产品机会。
 
+> **Growth Mode（规划中）**：同一 Radar 引擎的延伸 **[DemandRadar](./docs/demand-radar/README.md)** — 面向已有产品，捕获 search/community intent → SEO 与社区增长机会。见 `feat/demand-radar` 分支。
+
 **当前已实现**：Stage 0（可选领域定向）+ Stage 1–3（痛点雷达 → ICE 评分 → 用户研究 + **V2 商业判断**）  
 **默认数据源**：Hacker News + Product Hunt + Reddit（`fetch_radar.py`）；可选 GitHub Issues、App Store 差评；PH/Reddit 需 `.env` token
 
@@ -439,6 +441,7 @@ ai-pain-pipeline/
 | [docs/execution-modes.md](./docs/execution-modes.md) | 5 种执行模式 | **目标占位**（无 `pipeline run` CLI） |
 | [docs/project_thinking.md](./docs/project_thinking.md) | 爬取质量与领域定向思路 | 混合：§三 路线图跟踪实现进度 |
 | [docs/radar_quality.md](./docs/radar_quality.md) | Radar 质量 benchmark | **已实现** 度量与门禁 |
+| [docs/demand-radar/](./docs/demand-radar/README.md) | **DemandRadar** Growth Mode 产品定义与 MVP | **规划中** `feat/demand-radar` |
 
 ---
 
@@ -462,6 +465,7 @@ ai-pain-pipeline/
 | HN 定向 idea/关键词搜索 | ❌ #14 |
 | Reddit OAuth smoke test | ❌ #12 |
 | G2 / Capterra 适配器 | ❌ #6 |
+| **DemandRadar Growth Mode**（G0–G4） | 🚧 [docs/demand-radar/](./docs/demand-radar/README.md) |
 
 ---
 
