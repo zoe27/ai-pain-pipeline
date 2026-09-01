@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "demand_signal.schema.json",
+  "title": "Demand Signal (Multi-Platform)",
+  "description": "G1 output: filtered demand signals with intent detected (supports multiple platforms)",
+  "type": "object",
+  "required": [
+    "growth_id",
+    "created_at",
+    "signals",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "growth_id": {
+      "type": "string",
+      "pattern": "^growth_(zhihu|reddit|hn|multi)_\\d{4}-\\d{2}-\\d{2}_\\d{3}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": [
+          "signal_id",
+          "platform",
+          "url",
+          "title",
+          "intent_detected"
+        ],
+        "properties": {
+          "signal_id": {
+            "type": "string",
+            "pattern": "^(zhihu|reddit|hn)_(q|post)_[a-zA-Z0-9]+$",
+            "description": "Platform-specific ID: zhihu_q_123, reddit_post_abc, hn_post_456"
+          },
+          "platform": {
+            "type": "string",
+            "enum": ["zhihu", "reddit", "hackernews", "quora", "twitter"],
+            "description": "Source platform"
+          },
+          "content_type": {
+            "type": "string",
+            "enum": ["question", "post", "thread", "tweet"],
+            "description": "Type of content"
+          },
+          "platform_id": {
+            "type": "string",
+            "description": "Native platform ID (e.g., Zhihu question_id, Reddit post ID)"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "detail": {
+            "type": "string",
+            "description": "Question detail/post body"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author": {
+            "type": "string"
+          },
+          "engagement": {
+            "type": "object",
+            "properties": {
+              "follower_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Zhihu followers / Reddit subscribers"
+              },
+              "answer_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Zhihu answers / Reddit comments"
+              },
+              "view_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "upvote_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Reddit upvotes / HN points"
+              },
+              "comment_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Generic comment count"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Platform-specific engagement metrics"
+          },
+          "latest_activity": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When was the last answer/comment"
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Platform tags/topics (Zhihu topics, Reddit flairs, HN tags)"
+          },
+          "intent_detected": {
+            "type": "boolean",
+            "description": "Does this content contain intent signal?"
+          },
+          "intent_type": {
+            "type": "string",
+            "enum": [
+              "tool_recommendation",
+              "comparison",
+              "how_to",
+              "alternative_seeking",
+              "pain_expression",
+              "unknown"
+            ],
+            "description": "Type of intent (note: pain_expression for Pain Pipeline compatibility)"
+          },
+          "relevance_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "How relevant to our product (0-100)"
+          },
+          "commercial_intent": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "description": "Likelihood of commercial conversion"
+          },
+          "keywords_matched": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Which target keywords matched"
+          },
+          "reasoning": {
+            "type": "string",
+            "description": "Why this signal was included/excluded"
+          },
+          "language": {
+            "type": "string",
+            "enum": ["zh", "en", "other"],
+            "description": "Content language"
+          },
+          "existing_answer": {
+            "type": "object",
+            "description": "Whether logged-in Zhihu account already answered (from fetch or review check)",
+            "properties": {
+              "answered": {
+                "type": "boolean"
+              },
+              "answer_id": {
+                "type": ["string", "null"]
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri"
+              },
+              "checked_at": {
+                "type": ["string", "null"],
+                "format": "date-time"
+              },
+              "error": {
+                "type": ["string", "null"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["raw_count", "filtered_count"],
+      "properties": {
+        "raw_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total items fetched"
+        },
+        "filtered_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Items with intent detected"
+        },
+        "by_platform": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Count by platform: {zhihu: 10, reddit: 5}"
+        },
+        "keywords_searched": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "date_range": {
+          "type": "string"
+        },
+        "platforms_used": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["zhihu", "reddit", "hackernews", "quora", "twitter"]
+          },
+          "description": "Which platforms were actually scanned"
+        },
+        "already_answered_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Signals where logged-in Zhihu account already answered"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

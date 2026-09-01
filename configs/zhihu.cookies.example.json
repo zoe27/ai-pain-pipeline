@@ -1,0 +1,7 @@
+{
+  "_comment": "从已登录且通过验证的浏览器导出 Cookie，保存为 configs/zhihu.cookies.json（不要提交到 git）",
+  "_required_keys": ["z_c0", "_xsrf", "d_c0"],
+  "z_c0": "REPLACE_ME",
+  "_xsrf": "REPLACE_ME",
+  "d_c0": "REPLACE_ME"
+}

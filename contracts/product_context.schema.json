@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "product_context.schema.json",
+  "title": "Product Context",
+  "description": "G0 output: product anchoring for demand discovery",
+  "type": "object",
+  "required": [
+    "growth_id",
+    "created_at",
+    "product_input",
+    "product_info",
+    "scan_config"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "growth_id": {
+      "type": "string",
+      "pattern": "^growth_(zhihu|reddit|hn|multi)_\\d{4}-\\d{2}-\\d{2}_\\d{3}$",
+      "description": "Unique identifier for this growth run (platform prefix indicates primary channel)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "product_input": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["url", "github", "manual"],
+          "description": "How the product was provided"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URL, GitHub repo, or description text"
+        },
+        "github_repo": {
+          "type": ["string", "null"],
+          "description": "GitHub repository URL if type is github"
+        },
+        "manual_description": {
+          "type": ["string", "null"],
+          "description": "Manual product description if type is manual"
+        }
+      },
+      "additionalProperties": false
+    },
+    "product_info": {
+      "type": "object",
+      "required": ["name", "description", "core_capabilities", "target_keywords"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 500
+        },
+        "core_capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": "Key features/capabilities of the product"
+        },
+        "target_keywords": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": "Keywords for Zhihu search"
+        },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Known competitors for related search"
+        },
+        "target_user": {
+          "type": "string",
+          "description": "Target user persona"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scan_config": {
+      "type": "object",
+      "required": ["sources", "date_range"],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["zhihu", "reddit", "hackernews", "quora", "twitter"]
+          },
+          "description": "Data sources to scan (MVP: zhihu only, future: reddit, HN, etc.)"
+        },
+        "date_range": {
+          "type": "string",
+          "enum": ["30_days", "60_days", "90_days", "180_days"],
+          "default": "90_days"
+        },
+        "max_questions_per_keyword": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 50,
+          "default": 20
+        },
+        "custom_keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional keywords beyond auto-detected ones"
+        }
+      },
+      "additionalProperties": false
+    },
+    "connected_accounts": {
+      "type": "object",
+      "properties": {
+        "zhihu": {
+          "type": "object",
+          "properties": {
+            "username": { "type": "string" },
+            "auth_token_encrypted": { "type": "string" },
+            "connected_at": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] }
+          },
+          "additionalProperties": false
+        },
+        "reddit": {
+          "type": "object",
+          "properties": {
+            "username": { "type": "string" },
+            "auth_token_encrypted": { "type": "string" },
+            "connected_at": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] }
+          },
+          "additionalProperties": false
+        },
+        "hackernews": {
+          "type": "object",
+          "properties": {
+            "username": { "type": "string" },
+            "auth_token_encrypted": { "type": "string" },
+            "connected_at": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] }
+          },
+          "additionalProperties": false
+        },
+        "twitter": {
+          "type": "object",
+          "properties": {
+            "handle": { "type": "string" },
+            "auth_token_encrypted": { "type": "string" },
+            "connected_at": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "Connected social accounts (Phase 2+)"
+    },
+    "linked_pipeline_id": {
+      "type": ["string", "null"],
+      "pattern": "^pipe_\\d{4}-\\d{2}-\\d{2}_\\d{3}$",
+      "description": "Optional link to a Pain Pipeline run"
+    }
+  }
+}
