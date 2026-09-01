@@ -48,6 +48,24 @@
 
 ---
 
+## 一条命令（全自动到 Review）
+
+无需 Cursor Agent，需 `ANTHROPIC_API_KEY` + 本地知乎 Cookie：
+
+```bash
+export ANTHROPIC_API_KEY=your-key
+pip install -r requirements.txt
+
+python3 growth_orchestrator.py run \
+  --product-url https://www.yibelin.com/ \
+  --cookies configs/zhihu.cookies.json \
+  --open-review
+```
+
+产出 `g4_zhihu_answers.json` 与 `answers_for_review.md`，人工在 Dashboard 点发布。
+
+---
+
 ## 下一步（本分支）
 
 1. ✅ 需求与架构文档
