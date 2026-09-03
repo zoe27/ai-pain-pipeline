@@ -50,7 +50,7 @@
   },
   "scan_config": {
     "sources": ["zhihu"],
-    "date_range": "90_days",
+    "date_range": "30_days",
     "max_questions_per_keyword": 20,
     "custom_keywords": []
   },
@@ -112,7 +112,7 @@
 
 #### 7. `scan_config`
 - `sources`: MVP 固定为 `["zhihu"]`
-- `date_range`: 推荐 "90_days"
+- `date_range`: 默认 "30_days"，可选 "60_days" / "90_days" / "180_days"
 - `max_questions_per_keyword`: 推荐 20
 - `custom_keywords`: 用户额外指定的关键词（通常为空）
 
@@ -202,7 +202,7 @@ URL: https://example.com
   },
   "scan_config": {
     "sources": ["zhihu"],
-    "date_range": "90_days",
+    "date_range": "30_days",
     "max_questions_per_keyword": 20,
     "custom_keywords": []
   },

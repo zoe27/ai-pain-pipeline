@@ -112,7 +112,7 @@
         "date_range": {
           "type": "string",
           "enum": ["30_days", "60_days", "90_days", "180_days"],
-          "default": "90_days"
+          "default": "30_days"
         },
         "max_questions_per_keyword": {
           "type": "integer",

@@ -23,7 +23,7 @@ import os
 import random
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.cookiejar import MozillaCookieJar
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -37,6 +37,12 @@ from fake_useragent import UserAgent
 # Constants
 BASE_ZHIHU_SEARCH_URL = "https://www.zhihu.com/api/v4/search_v3"
 BASE_ZHIHU_QUESTION_URL = "https://www.zhihu.com/question"
+DATE_RANGE_TO_DAYS = {
+    '30_days': 30,
+    '60_days': 60,
+    '90_days': 90,
+    '180_days': 180,
+}
 
 
 def load_cookies_into_session(session: requests.Session, cookies_path: str) -> None:
@@ -73,6 +79,35 @@ def load_cookies_into_session(session: requests.Session, cookies_path: str) -> N
     for name, value in data.items():
         if value is not None:
             session.cookies.set(str(name), str(value), domain='.zhihu.com')
+
+
+def normalize_date_range(date_range: Optional[str]) -> str:
+    """Normalize date range and fall back to the default window."""
+    return date_range if date_range in DATE_RANGE_TO_DAYS else '30_days'
+
+
+def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
+    """Best-effort parser for ISO-like timestamps."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    except ValueError:
+        return None
+
+
+def within_date_range(question: Dict, date_range: str) -> bool:
+    """Use latest activity first, then creation time, to decide freshness."""
+    cutoff = datetime.now() - timedelta(days=DATE_RANGE_TO_DAYS[date_range])
+    candidate = (
+        parse_iso_datetime(question.get('latest_activity'))
+        or parse_iso_datetime(question.get('created_at'))
+    )
+    if candidate is None:
+        return True
+    if candidate.tzinfo is not None:
+        candidate = candidate.replace(tzinfo=None)
+    return candidate >= cutoff
 
 
 class ZhihuFetcher:
@@ -366,11 +401,19 @@ def main():
         action='store_true',
         help='Skip checking whether logged-in account already answered each question',
     )
+    parser.add_argument(
+        '--date-range',
+        choices=sorted(DATE_RANGE_TO_DAYS.keys()),
+        default=None,
+        help='Override product_context scan_config.date_range for this fetch run',
+    )
     args = parser.parse_args()
     
     # Load product context
     print(f"Loading product context for {args.growth_id}...")
     product_ctx = load_product_context(args.growth_id)
+    scan_config = product_ctx.get('scan_config', {})
+    date_range = normalize_date_range(args.date_range or scan_config.get('date_range'))
     
     # Initialize fetcher
     fetcher = ZhihuFetcher(config_path=args.config, cookies_path=args.cookies)
@@ -380,6 +423,7 @@ def main():
     if not fetcher.probe_access():
         raise SystemExit(1)
     print("  ✓ Zhihu search API reachable")
+    print(f"  Freshness window: {date_range}")
     if args.probe_only:
         return
     
@@ -413,6 +457,16 @@ def main():
         if qid not in seen:
             seen.add(qid)
             unique_questions.append(q)
+
+    pre_filter_count = len(unique_questions)
+    unique_questions = [q for q in unique_questions if within_date_range(q, date_range)]
+    filtered_out = pre_filter_count - len(unique_questions)
+    print(
+        f"\n2.5 Filtered by freshness ({date_range}): "
+        f"kept {len(unique_questions)}/{pre_filter_count}"
+    )
+    if filtered_out:
+        print(f"  Filtered out {filtered_out} older questions")
 
     # 3. Check whether logged-in account already answered (requires cookies)
     if args.cookies and not args.skip_answer_check and unique_questions:
@@ -453,6 +507,9 @@ def main():
         'total_count': len(unique_questions),
         'keywords_searched': keywords,
         'competitors_searched': competitors,
+        'date_range': date_range,
+        'pre_date_filter_count': pre_filter_count,
+        'filtered_out_by_date_range': filtered_out,
         'questions': unique_questions,
         'source': 'zhihu_live',
     }

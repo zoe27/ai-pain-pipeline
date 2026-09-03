@@ -104,7 +104,28 @@ class ZhihuAnswerChecker:
 
 def load_answers() -> dict:
     with open(RUN_DIR / "g4_zhihu_answers.json", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+
+    signal_path = RUN_DIR / "g1_demand_signals.json"
+    signal_map = {}
+    if signal_path.exists():
+        with open(signal_path, encoding="utf-8") as f:
+            signals = json.load(f).get("signals", [])
+        signal_map = {s.get("platform_id"): s for s in signals if s.get("platform_id")}
+
+    for answer in data.get("zhihu_answers", []):
+        source_metadata = dict(answer.get("source_metadata") or {})
+        signal = signal_map.get(answer.get("question_id")) or {}
+        if signal:
+            source_metadata.setdefault("created_at", signal.get("created_at"))
+            source_metadata.setdefault("latest_activity", signal.get("latest_activity"))
+            engagement = signal.get("engagement") or {}
+            source_metadata.setdefault("view_count", engagement.get("view_count", 0))
+            source_metadata.setdefault("follower_count", engagement.get("follower_count", 0))
+            source_metadata.setdefault("answer_count", engagement.get("answer_count", 0))
+        answer["source_metadata"] = source_metadata
+
+    return data
 
 def save_answers(data: dict):
     with open(RUN_DIR / "g4_zhihu_answers.json", "w", encoding="utf-8") as f:
@@ -237,6 +258,24 @@ function statusLabel(status) {
   return labels[status] || status;
 }
 
+function formatDateTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('zh-CN', { hour12: false });
+}
+
+function freshnessLabel(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const diffDays = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 7) return '7天内';
+  if (diffDays <= 30) return '30天内';
+  if (diffDays <= 90) return '90天内';
+  return '90天前';
+}
+
 // ── load data ──────────────────────────────────────────────────────────────
 async function init() {
   document.getElementById('topbar-meta').textContent = '加载草稿...';
@@ -345,6 +384,9 @@ function renderCard(idx) {
   const status = displayStatus(a);
   const srcMeta = a.source_metadata || {};
   const existing = a.existing_answer || {};
+  const createdAt = srcMeta.created_at || a.created_at;
+  const latestActivity = srcMeta.latest_activity || a.latest_activity;
+  const freshness = freshnessLabel(latestActivity || createdAt);
 
   let actionHtml = '';
   if (status === 'published') {
@@ -371,6 +413,9 @@ function renderCard(idx) {
       ${a.question_detail ? `<p style="margin-top:10px;font-size:13px;color:#6b7280;line-height:1.6">${escHtml(a.question_detail)}</p>` : ''}
       <div class="question-meta">
         <span>📎 <a href="${escAttr(a.question_url)}" target="_blank" style="color:#2563eb">在知乎查看原帖 →</a></span>
+        ${createdAt ? `<span>🕒 创建 ${escHtml(formatDateTime(createdAt))}</span>` : ''}
+        ${latestActivity ? `<span>⏱ 最近活跃 ${escHtml(formatDateTime(latestActivity))}</span>` : ''}
+        ${freshness ? `<span>🔥 ${escHtml(freshness)}</span>` : ''}
         ${srcMeta.view_count ? `<span>👁 ${srcMeta.view_count} 浏览</span>` : ''}
         ${srcMeta.answer_count ? `<span>💬 ${srcMeta.answer_count} 回答</span>` : ''}
         ${existing.checked_at ? `<span>🔍 检测于 ${escHtml(existing.checked_at.slice(0, 19).replace('T', ' '))}</span>` : ''}
