@@ -140,7 +140,11 @@ def assemble_zhihu_answers(
         }
         existing = answer.get('existing_answer') or sig.get('existing_answer')
         if existing:
-            enriched['existing_answer'] = existing
+            enriched['existing_answer'] = {
+                k: existing.get(k)
+                for k in ('answered', 'answer_id', 'url', 'checked_at')
+                if k in existing
+            }
         
         enriched_answers.append(enriched)
     
