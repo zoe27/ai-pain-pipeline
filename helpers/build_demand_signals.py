@@ -137,7 +137,7 @@ def assemble_demand_signals(growth_id: str, raw_data: Dict, judgment: Dict) -> D
             'filtered_count': len(signals),
             'by_platform': by_platform,
             'keywords_searched': raw_data.get('keywords_searched', []),
-            'date_range': '90_days',  # From config
+            'date_range': raw_data.get('date_range', '30_days'),
             'platforms_used': list(set(s['platform'] for s in signals)),
             'already_answered_count': already_answered,
         }

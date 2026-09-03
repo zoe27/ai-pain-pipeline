@@ -17,6 +17,9 @@ from typing import Dict
 
 import jsonschema
 
+DEFAULT_DATE_RANGE = '30_days'
+ALLOWED_DATE_RANGES = {'30_days', '60_days', '90_days', '180_days'}
+
 
 def load_schema(schema_name: str) -> Dict:
     """Load JSON schema"""
@@ -43,6 +46,23 @@ def validate_judgment(judgment: Dict):
     keywords = product_info['target_keywords']
     if not isinstance(keywords, list) or len(keywords) < 3:
         raise ValueError(f"target_keywords must be a list with at least 3 items, got: {keywords}")
+
+    scan_config = judgment['scan_config']
+    date_range = scan_config.get('date_range', DEFAULT_DATE_RANGE)
+    if date_range not in ALLOWED_DATE_RANGES:
+        raise ValueError(
+            f"scan_config.date_range must be one of {sorted(ALLOWED_DATE_RANGES)}, got: {date_range}"
+        )
+
+
+def normalize_scan_config(scan_config: Dict) -> Dict:
+    """Fill defaults so downstream stages can rely on a complete config."""
+    normalized = dict(scan_config or {})
+    normalized.setdefault('sources', ['zhihu'])
+    normalized['date_range'] = normalized.get('date_range') or DEFAULT_DATE_RANGE
+    normalized.setdefault('max_questions_per_keyword', 20)
+    normalized.setdefault('custom_keywords', [])
+    return normalized
 
 
 def load_judgment(growth_id: str) -> Dict:
@@ -74,7 +94,7 @@ def assemble_product_context(growth_id: str, judgment: Dict, product_input: Dict
         'created_at': datetime.now().isoformat(),
         'product_input': product_input,
         'product_info': judgment['product_info'],
-        'scan_config': judgment['scan_config'],
+        'scan_config': normalize_scan_config(judgment['scan_config']),
         'connected_accounts': {},  # Phase 2
         'linked_pipeline_id': None,
     }
